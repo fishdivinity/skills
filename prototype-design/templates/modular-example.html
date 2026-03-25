@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模块化原型示例 - 复杂页面架构</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- 
+    ╔══════════════════════════════════════════════════════════════╗
+    ║  模块化原型设计说明                                            ║
+    ╠══════════════════════════════════════════════════════════════╣
+    ║  对于复杂原型，采用以下模块化策略：                              ║
+    ║                                                              ║
+    ║  1. CSS模块：按功能拆分为多个<style>块                         ║
+    ║     - 基础样式（变量、重置）                                   ║
+    ║     - 布局样式（侧边栏、头部）                                 ║
+    ║     - 组件样式（按钮、表单、表格）                             ║
+    ║     - 动画样式（过渡、关键帧）                                 ║
+    ║                                                              ║
+    ║  2. HTML模块：按区域拆分为注释标记的区块                       ║
+    ║     - 使用 <!-- ============ 模块名 ============ --> 标记      ║
+    ║                                                              ║
+    ║  3. JS模块：按功能拆分为多个<script>块                         ║
+    ║     - 数据定义                                                ║
+    ║     - 工具函数                                                ║
+    ║     - 事件处理                                                ║
+    ║     - 初始化逻辑                                              ║
+    ║                                                              ║
+    ║  4. 生成时：AI根据需求组合所需模块，输出完整HTML                ║
+    ╚══════════════════════════════════════════════════════════════╝
+  -->
+  
+  <!-- ========== 主题配置模块 ========== -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            csa: { 50: '#e6f2ff', 100: '#cce5ff', 200: '#99cbff', 300: '#66b1ff', 400: '#3397ff', 500: '#0066cc', 600: '#0052a3', 700: '#003d7a', 800: '#002952', 900: '#001429' },
+            csaRed: { 400: '#e8384d', 500: '#c8102e', 600: '#a00d25' },
+            csaGold: { 400: '#e0b85c', 500: '#d4a843', 600: '#b8922e' },
+            neutral: { 50: '#fafafa', 100: '#f5f5f5', 200: '#e5e5e5', 300: '#d4d4d4', 400: '#a3a3a3', 500: '#737373', 600: '#525252', 700: '#404040', 800: '#262626', 900: '#171717' },
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- ========== 基础样式模块 ========== -->
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    * { box-sizing: border-box; }
+  </style>
+
+  <!-- ========== 布局样式模块 ========== -->
+  <style>
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 240px;
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 40;
+    }
+    .main-content {
+      flex: 1;
+      margin-left: 240px;
+    }
+  </style>
+
+  <!-- ========== 组件样式模块 ========== -->
+  <style>
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: #0066cc;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #0052a3;
+    }
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #525252;
+    }
+    .btn-secondary:hover {
+      background: #e5e5e5;
+    }
+  </style>
+
+  <!-- ========== 表格样式模块 ========== -->
+  <style>
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #737373;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #e5e5e5;
+      background: #fafafa;
+    }
+    .data-table td {
+      padding: 16px;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .data-table tr:hover td {
+      background: #fafafa;
+    }
+  </style>
+
+  <!-- ========== 动画样式模块 ========== -->
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+    .animate-slideIn { animation: slideIn 0.3s ease-out; }
+    .animate-pulse { animation: pulse 2s infinite; }
+  </style>
+
+  <!-- ========== 状态样式模块 ========== -->
+  <style>
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-inactive { background: #f3f4f6; color: #4b5563; }
+    .status-error { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+
+<body class="bg-neutral-100">
+
+  <!-- ==================== 侧边栏模块 ==================== -->
+  <aside class="sidebar bg-csa-700 text-white">
+    <div class="p-6 border-b border-white/10">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-csa-500 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="font-semibold">MRS系统</h1>
+          <p class="text-xs text-white/60">机务维修管理</p>
+        </div>
+      </div>
+    </div>
+    
+    <nav class="p-4 space-y-1">
+      <a href="#" class="flex items-center px-4 py-3 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        工作台
+      </a>
+      <a href="#" class="flex items-center px-4 py-3 rounded-lg bg-white/10 text-white">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        任务管理
+      </a>
+      <a href="#" class="flex items-center px-4 py-3 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        任务编排
+      </a>
+      <a href="#" class="flex items-center px-4 py-3 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition-colors">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        统计分析
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ==================== 主内容模块 ==================== -->
+  <main class="main-content">
+    
+    <!-- ========== 顶部导航模块 ========== -->
+    <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 sticky top-0 z-30">
+      <div class="flex items-center space-x-4">
+        <nav class="flex items-center text-sm text-neutral-500">
+          <a href="#" class="hover:text-neutral-700">首页</a>
+          <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+          <span class="text-neutral-900 font-medium">任务管理</span>
+        </nav>
+      </div>
+      <div class="flex items-center space-x-4">
+        <button class="p-2 text-neutral-400 hover:text-neutral-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+        </button>
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-csa-100 rounded-full flex items-center justify-center">
+            <span class="text-sm font-medium text-csa-700">张</span>
+          </div>
+          <span class="text-sm font-medium text-neutral-700">张三</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ========== 页面内容模块 ========== -->
+    <div class="p-6">
+      
+      <!-- 统计卡片模块 -->
+      <div class="grid grid-cols-4 gap-6 mb-6">
+        <div class="card p-6 animate-fadeIn" style="animation-delay: 0ms;">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-neutral-500">待处理任务</p>
+              <p class="text-3xl font-semibold text-neutral-900 mt-1">24</p>
+            </div>
+            <div class="w-12 h-12 bg-csa-100 rounded-xl flex items-center justify-center">
+              <svg class="w-6 h-6 text-csa-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center text-sm">
+            <span class="text-csaRed-500">↑ 12%</span>
+            <span class="text-neutral-400 ml-2">较昨日</span>
+          </div>
+        </div>
+        
+        <div class="card p-6 animate-fadeIn" style="animation-delay: 100ms;">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-neutral-500">进行中</p>
+              <p class="text-3xl font-semibold text-neutral-900 mt-1">8</p>
+            </div>
+            <div class="w-12 h-12 bg-csaGold-400/20 rounded-xl flex items-center justify-center">
+              <svg class="w-6 h-6 text-csaGold-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center text-sm">
+            <span class="text-green-600">↑ 5%</span>
+            <span class="text-neutral-400 ml-2">较昨日</span>
+          </div>
+        </div>
+        
+        <div class="card p-6 animate-fadeIn" style="animation-delay: 200ms;">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-neutral-500">已完成</p>
+              <p class="text-3xl font-semibold text-neutral-900 mt-1">156</p>
+            </div>
+            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center text-sm">
+            <span class="text-green-600">↑ 18%</span>
+            <span class="text-neutral-400 ml-2">较昨日</span>
+          </div>
+        </div>
+        
+        <div class="card p-6 animate-fadeIn" style="animation-delay: 300ms;">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-neutral-500">逾期任务</p>
+              <p class="text-3xl font-semibold text-csaRed-500 mt-1">3</p>
+            </div>
+            <div class="w-12 h-12 bg-csaRed-400/20 rounded-xl flex items-center justify-center">
+              <svg class="w-6 h-6 text-csaRed-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center text-sm">
+            <span class="text-csaRed-500">↑ 2</span>
+            <span class="text-neutral-400 ml-2">需立即处理</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工具栏模块 -->
+      <div class="card mb-6">
+        <div class="p-4 flex items-center justify-between border-b border-neutral-100">
+          <div class="flex items-center space-x-3">
+            <div class="relative">
+              <input type="text" placeholder="搜索任务..." class="pl-10 pr-4 py-2 border border-neutral-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-csa-500 focus:border-transparent w-64">
+              <svg class="w-5 h-5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+            <select class="px-4 py-2 border border-neutral-200 rounded-lg text-sm text-neutral-600 focus:outline-none focus:ring-2 focus:ring-csa-500">
+              <option>全部状态</option>
+              <option>待处理</option>
+              <option>进行中</option>
+              <option>已完成</option>
+            </select>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button class="btn btn-secondary">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+              </svg>
+              导出
+            </button>
+            <button class="btn btn-primary">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              新建任务
+            </button>
+          </div>
+        </div>
+
+        <!-- 表格模块 -->
+        <div class="overflow-x-auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="w-12">
+                  <input type="checkbox" class="w-4 h-4 rounded border-neutral-300">
+                </th>
+                <th>任务编号</th>
+                <th>任务名称</th>
+                <th>机型</th>
+                <th>负责人</th>
+                <th>状态</th>
+                <th>截止日期</th>
+                <th class="text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 分页模块 -->
+        <div class="p-4 flex items-center justify-between border-t border-neutral-100">
+          <p class="text-sm text-neutral-500">显示 1-10 条，共 24 条</p>
+          <div class="flex items-center space-x-2">
+            <button class="px-3 py-1 border border-neutral-200 rounded text-sm text-neutral-500 hover:bg-neutral-50">上一页</button>
+            <button class="px-3 py-1 bg-csa-500 text-white rounded text-sm">1</button>
+            <button class="px-3 py-1 border border-neutral-200 rounded text-sm text-neutral-600 hover:bg-neutral-50">2</button>
+            <button class="px-3 py-1 border border-neutral-200 rounded text-sm text-neutral-600 hover:bg-neutral-50">3</button>
+            <button class="px-3 py-1 border border-neutral-200 rounded text-sm text-neutral-600 hover:bg-neutral-50">下一页</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== 模态框模块 ==================== -->
+  <div id="detailModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 animate-fadeIn">
+      <div class="px-6 py-4 border-b border-neutral-200 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-neutral-900">任务详情</h3>
+        <button onclick="closeModal()" class="text-neutral-400 hover:text-neutral-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="p-6" id="modalContent">
+      </div>
+      <div class="px-6 py-4 border-t border-neutral-200 flex justify-end space-x-3">
+        <button onclick="closeModal()" class="btn btn-secondary">取消</button>
+        <button class="btn btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== JavaScript模块 ==================== -->
+  
+  <!-- ========== 数据定义模块 ========== -->
+  <script>
+    const tasksData = [
+      { id: 'TASK-2024-001', name: '发动机定期检修', aircraft: 'B737-800', manager: '张三', status: 'active', deadline: '2024-03-25' },
+      { id: 'TASK-2024-002', name: '起落架故障排除', aircraft: 'A320-200', manager: '李四', status: 'pending', deadline: '2024-03-22' },
+      { id: 'TASK-2024-003', name: '航电系统部件更换', aircraft: 'B737-MAX', manager: '王五', status: 'active', deadline: '2024-03-28' },
+      { id: 'TASK-2024-004', name: '机身蒙皮修复', aircraft: 'A320-200', manager: '赵六', status: 'error', deadline: '2024-03-20' },
+      { id: 'TASK-2024-005', name: '液压系统检测', aircraft: 'B737-800', manager: '张三', status: 'inactive', deadline: '2024-03-30' },
+    ];
+
+    const statusMap = {
+      active: { label: '进行中', class: 'status-active' },
+      pending: { label: '待处理', class: 'status-pending' },
+      inactive: { label: '已暂停', class: 'status-inactive' },
+      error: { label: '已逾期', class: 'status-error' }
+    };
+  </script>
+
+  <!-- ========== 工具函数模块 ========== -->
+  <script>
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    }
+
+    function getStatusBadge(status) {
+      const info = statusMap[status];
+      return `<span class="status-badge ${info.class}">${info.label}</span>`;
+    }
+  </script>
+
+  <!-- ========== 渲染函数模块 ========== -->
+  <script>
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = tasksData.map(task => `
+        <tr class="animate-slideIn">
+          <td>
+            <input type="checkbox" class="w-4 h-4 rounded border-neutral-300">
+          </td>
+          <td class="font-mono text-sm text-csa-600">${task.id}</td>
+          <td class="font-medium text-neutral-900">${task.name}</td>
+          <td class="text-neutral-600">${task.aircraft}</td>
+          <td class="text-neutral-600">${task.manager}</td>
+          <td>${getStatusBadge(task.status)}</td>
+          <td class="text-neutral-600">${formatDate(task.deadline)}</td>
+          <td class="text-right">
+            <button onclick="viewDetail('${task.id}')" class="text-csa-600 hover:text-csa-700 text-sm font-medium">查看</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+  </script>
+
+  <!-- ========== 事件处理模块 ========== -->
+  <script>
+    function viewDetail(taskId) {
+      const task = tasksData.find(t => t.id === taskId);
+      if (!task) return;
+      
+      document.getElementById('modalContent').innerHTML = `
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm text-neutral-500 mb-1">任务编号</label>
+            <p class="font-medium text-neutral-900">${task.id}</p>
+          </div>
+          <div>
+            <label class="block text-sm text-neutral-500 mb-1">任务名称</label>
+            <p class="font-medium text-neutral-900">${task.name}</p>
+          </div>
+          <div>
+            <label class="block text-sm text-neutral-500 mb-1">机型</label>
+            <p class="text-neutral-700">${task.aircraft}</p>
+          </div>
+          <div>
+            <label class="block text-sm text-neutral-500 mb-1">负责人</label>
+            <p class="text-neutral-700">${task.manager}</p>
+          </div>
+          <div>
+            <label class="block text-sm text-neutral-500 mb-1">状态</label>
+            ${getStatusBadge(task.status)}
+          </div>
+          <div>
+            <label class="block text-sm text-neutral-500 mb-1">截止日期</label>
+            <p class="text-neutral-700">${formatDate(task.deadline)}</p>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('detailModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('detailModal').classList.add('hidden');
+    }
+
+    document.getElementById('detailModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+  </script>
+
+  <!-- ========== 初始化模块 ========== -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      renderTable();
+    });
+  </script>
+</body>
+</html>

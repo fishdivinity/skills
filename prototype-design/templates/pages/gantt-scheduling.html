@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>任务编排 - 甘特图</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            csa: { 50: '#e6f2ff', 100: '#cce5ff', 200: '#99cbff', 300: '#66b1ff', 400: '#3397ff', 500: '#0066cc', 600: '#0052a3', 700: '#003d7a', 800: '#002952', 900: '#001429' },
+            csaRed: { 400: '#e8384d', 500: '#c8102e', 600: '#a00d25' },
+            csaGold: { 400: '#e0b85c', 500: '#d4a843', 600: '#b8922e' },
+            neutral: { 50: '#fafafa', 100: '#f5f5f5', 200: '#e5e5e5', 300: '#d4d4d4', 400: '#a3a3a3', 500: '#737373', 600: '#525252', 700: '#404040', 800: '#262626', 900: '#171717' },
+            success: '#10b981', warning: '#f59e0b', danger: '#ef4444', info: '#3b82f6',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    
+    .gantt-container { 
+      position: relative; 
+      overflow: hidden;
+    }
+    
+    .aircraft-label-fixed {
+      position: sticky;
+      left: 0;
+      z-index: 20;
+      background: linear-gradient(90deg, white 95%, transparent);
+      box-shadow: 4px 0 8px rgba(0,0,0,0.1);
+    }
+    
+    .time-header-fixed {
+      position: sticky;
+      top: 0;
+      z-index: 15;
+      background: white;
+    }
+    
+    .gantt-row:nth-child(even) { background: #fafafa; }
+    .gantt-row:nth-child(odd) { background: white; }
+    
+    .time-grid-hour {
+      background-image: repeating-linear-gradient(
+        90deg,
+        #f8fafc 0px,
+        #f8fafc 75px,
+        #f1f5f9 75px,
+        #f1f5f9 150px
+      );
+      background-size: 1800px 100%;
+    }
+    
+    .time-grid-day {
+      background-image: repeating-linear-gradient(
+        90deg,
+        #e5e7eb 0px,
+        #e5e7eb 1px,
+        transparent 1px,
+        transparent 1440px
+      );
+    }
+    
+    .parking-bar {
+      position: absolute;
+      height: 56px;
+      background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 12px;
+      overflow: hidden;
+    }
+    .parking-bar:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.4);
+    }
+    .parking-bar.highlight {
+      box-shadow: 0 0 0 3px #0066cc, 0 4px 12px rgba(0, 102, 204, 0.4);
+    }
+    
+    .flight-bar {
+      position: absolute;
+      height: 56px;
+      background: linear-gradient(135deg, #475569 0%, #334155 100%);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      cursor: help;
+      transition: all 0.2s;
+      display: flex;
+      align-items: stretch;
+      overflow: hidden;
+    }
+    .flight-bar:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    .flight-bar.pending {
+      animation: flight-pulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes flight-pulse {
+      0%, 100% { 
+        opacity: 1; 
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      }
+      50% { 
+        opacity: 0.6; 
+        box-shadow: 0 2px 12px rgba(200, 16, 46, 0.4);
+      }
+    }
+    
+    .flight-departure, .flight-arrival {
+      width: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 4px;
+      flex-shrink: 0;
+    }
+    .flight-departure {
+      background: rgba(255,255,255,0.1);
+      border-right: 1px solid rgba(255,255,255,0.2);
+    }
+    .flight-arrival {
+      background: rgba(255,255,255,0.1);
+      border-left: 1px solid rgba(255,255,255,0.2);
+    }
+    .flight-center {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+    }
+    
+    .task-block {
+      position: absolute;
+      height: 24px;
+      background: linear-gradient(135deg, #d4a843 0%, #b8922e 100%);
+      border-radius: 4px;
+      box-shadow: 0 1px 4px rgba(212, 168, 67, 0.3);
+      cursor: move;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      overflow: hidden;
+    }
+    .task-block:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(212, 168, 67, 0.4);
+    }
+    .task-block.warning {
+      background: linear-gradient(135deg, #c8102e 0%, #a00d25 100%);
+    }
+    
+    .task-card {
+      cursor: grab;
+      transition: all 0.2s;
+    }
+    .task-card:active { cursor: grabbing; }
+    .task-card.dragging { 
+      opacity: 0.5; 
+      transform: rotate(3deg) scale(1.02);
+    }
+    
+    .zoom-indicator {
+      position: relative;
+      height: 4px;
+      background: #e5e7eb;
+      border-radius: 2px;
+    }
+    .zoom-indicator::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: var(--zoom-level, 33%);
+      background: #0066cc;
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+    
+    .current-time-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #c8102e;
+      z-index: 10;
+      pointer-events: none;
+    }
+    .current-time-line::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      width: 10px;
+      height: 10px;
+      background: #c8102e;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body class="bg-neutral-100 min-h-screen">
+  <div class="flex min-h-screen">
+    <aside class="w-60 bg-neutral-900 text-white flex flex-col fixed h-full z-30">
+      <div class="h-16 flex items-center px-6 border-b border-neutral-800">
+        <div class="w-8 h-8 bg-csa-500 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </div>
+        <span class="ml-3 text-lg font-semibold">任务编排</span>
+      </div>
+      <nav class="flex-1 py-4">
+        <a href="#" class="flex items-center px-6 py-3 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+          </svg>
+          <span class="ml-3">任务管理</span>
+        </a>
+        <a href="#" class="flex items-center px-6 py-3 bg-neutral-800 text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          <span class="ml-3">任务编排</span>
+        </a>
+      </nav>
+    </aside>
+
+    <div class="flex-1 ml-60">
+      <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 sticky top-0 z-20">
+        <div class="flex items-center space-x-4">
+          <nav class="flex items-center text-sm text-neutral-500">
+            <a href="#" class="hover:text-neutral-700">任务编排</a>
+            <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="text-neutral-900">甘特图</span>
+          </nav>
+        </div>
+        <div class="flex items-center space-x-6">
+          <div class="flex items-center space-x-3">
+            <span class="text-xs text-neutral-500">小时</span>
+            <div class="w-24 zoom-indicator" style="--zoom-level: 33%"></div>
+            <span class="text-xs text-neutral-500">周</span>
+          </div>
+          <div class="flex items-center space-x-2 text-xs text-neutral-500">
+            <span class="flex items-center"><span class="w-3 h-3 rounded bg-csa-500 mr-1.5"></span>停场条</span>
+            <span class="flex items-center"><span class="w-3 h-3 rounded bg-slate-500 mr-1.5"></span>航班条</span>
+            <span class="flex items-center"><span class="w-3 h-3 rounded bg-csaGold-500 mr-1.5"></span>任务</span>
+            <span class="flex items-center"><span class="w-3 h-3 rounded bg-csaRed-500 mr-1.5 animate-pulse"></span>未抵达</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="p-6">
+        <div class="flex gap-6 h-[calc(100vh-112px)]">
+          <div class="w-72 flex-shrink-0 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-neutral-200">
+              <h3 class="font-medium text-neutral-900">待编排任务</h3>
+              <p class="text-sm text-neutral-500 mt-1">拖拽任务到右侧甘特图</p>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-3">
+              <div class="task-card bg-csa-50 border border-csa-200 rounded-lg p-3 hover:shadow-md transition-all" draggable="true" data-task='{"id":"TASK-2024-001","name":"发动机定期检修","type":"定期检修","aircraft":"B737","duration":"5天"}'>
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <p class="text-sm font-medium text-neutral-900">发动机定期检修</p>
+                    <p class="text-xs text-neutral-500 mt-1">TASK-2024-001</p>
+                  </div>
+                  <button class="p-1 text-neutral-400 hover:text-csa-600" onclick="showTaskDetail(this)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="mt-2 flex items-center text-xs text-neutral-500">
+                  <span class="px-2 py-0.5 bg-white rounded border">B737</span>
+                  <span class="ml-2">预计 5天</span>
+                </div>
+              </div>
+
+              <div class="task-card bg-csaRed-400/5 border border-csaRed-400/20 rounded-lg p-3 hover:shadow-md transition-all" draggable="true" data-task='{"id":"TASK-2024-002","name":"起落架故障排除","type":"故障排除","aircraft":"A320","duration":"2天"}'>
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <p class="text-sm font-medium text-neutral-900">起落架故障排除</p>
+                    <p class="text-xs text-neutral-500 mt-1">TASK-2024-002</p>
+                  </div>
+                  <button class="p-1 text-neutral-400 hover:text-csa-600" onclick="showTaskDetail(this)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="mt-2 flex items-center text-xs text-neutral-500">
+                  <span class="px-2 py-0.5 bg-white rounded border">A320</span>
+                  <span class="ml-2">预计 2天</span>
+                </div>
+              </div>
+
+              <div class="task-card bg-csaGold-400/5 border border-csaGold-400/20 rounded-lg p-3 hover:shadow-md transition-all" draggable="true" data-task='{"id":"TASK-2024-003","name":"航电系统部件更换","type":"部件更换","aircraft":"B737","duration":"1天"}'>
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <p class="text-sm font-medium text-neutral-900">航电系统部件更换</p>
+                    <p class="text-xs text-neutral-500 mt-1">TASK-2024-003</p>
+                  </div>
+                  <button class="p-1 text-neutral-400 hover:text-csa-600" onclick="showTaskDetail(this)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="mt-2 flex items-center text-xs text-neutral-500">
+                  <span class="px-2 py-0.5 bg-white rounded border">B737</span>
+                  <span class="ml-2">预计 1天</span>
+                </div>
+              </div>
+
+              <div class="task-card bg-csa-100/30 border border-csa-200/30 rounded-lg p-3 hover:shadow-md transition-all" draggable="true" data-task='{"id":"TASK-2024-004","name":"机身蒙皮修复","type":"故障排除","aircraft":"A320","duration":"3天"}'>
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <p class="text-sm font-medium text-neutral-900">机身蒙皮修复</p>
+                    <p class="text-xs text-neutral-500 mt-1">TASK-2024-004</p>
+                  </div>
+                  <button class="p-1 text-neutral-400 hover:text-csa-600" onclick="showTaskDetail(this)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="mt-2 flex items-center text-xs text-neutral-500">
+                  <span class="px-2 py-0.5 bg-white rounded border">A320</span>
+                  <span class="ml-2">预计 3天</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex-1 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
+              <div class="flex items-center space-x-4">
+                <button class="px-3 py-1.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center">
+                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                  前一天
+                </button>
+                <span class="text-sm font-medium text-neutral-900">2024年3月20日 星期三</span>
+                <button class="px-3 py-1.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center">
+                  后一天
+                  <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button class="px-3 py-1.5 text-sm font-medium text-csa-600 bg-csa-50 rounded-lg">今天</button>
+                <button class="px-3 py-1.5 text-sm font-medium text-neutral-600 hover:bg-neutral-100 rounded-lg">刷新</button>
+              </div>
+            </div>
+
+            <div class="flex-1 overflow-auto gantt-container" id="ganttContainer">
+              <div class="min-w-[1800px]">
+                <div class="flex time-header-fixed">
+                  <div class="aircraft-label-fixed w-36 flex-shrink-0 p-3 text-xs font-medium text-neutral-500 border-b border-r border-neutral-200 bg-neutral-50 z-30">
+                    机号 / 机型
+                  </div>
+                  <div class="flex-1 flex border-b border-neutral-200">
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-400 border-r border-neutral-100 bg-neutral-50">00:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-400 border-r border-neutral-100 bg-neutral-50">01:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-400 border-r border-neutral-100 bg-neutral-50">02:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-400 border-r border-neutral-100 bg-neutral-50">03:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-400 border-r border-neutral-100 bg-neutral-50">04:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-500 border-r border-neutral-100 bg-neutral-50">05:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-500 border-r border-neutral-100 bg-neutral-50">06:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-500 border-r border-neutral-100 bg-neutral-50">07:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-900 font-medium border-r border-neutral-100 bg-neutral-50">08:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-900 font-medium border-r border-neutral-100 bg-neutral-50">09:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-900 font-medium border-r border-neutral-100 bg-neutral-50">10:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-900 font-medium border-r border-neutral-100 bg-neutral-50">11:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-900 font-medium border-r border-neutral-100 bg-neutral-50">12:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-900 font-medium border-r border-neutral-100 bg-neutral-50">13:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-900 font-medium border-r border-neutral-100 bg-neutral-50">14:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-900 font-medium border-r border-neutral-100 bg-neutral-50">15:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-900 font-medium border-r border-neutral-100 bg-neutral-50">16:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-900 font-medium border-r border-neutral-100 bg-neutral-50">17:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-900 font-medium border-r border-neutral-100 bg-neutral-50">18:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-500 border-r border-neutral-100 bg-neutral-50">19:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-500 border-r border-neutral-100 bg-neutral-50">20:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-400 border-r border-neutral-100 bg-neutral-50">21:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-400 border-r border-neutral-100 bg-neutral-50">22:00</div>
+                    <div class="w-[75px] p-2 text-xs text-center text-neutral-400 bg-neutral-50">23:00</div>
+                  </div>
+                </div>
+
+                <div class="gantt-row flex h-24 border-b border-neutral-100">
+                  <div class="aircraft-label-fixed w-36 flex-shrink-0 p-3 border-r border-neutral-200 flex flex-col justify-center bg-white">
+                    <p class="text-sm font-semibold text-neutral-900">B-1234</p>
+                    <p class="text-xs text-neutral-500">B737-800</p>
+                  </div>
+                  <div class="flex-1 relative time-grid-hour" style="width: 1800px;">
+                    <div class="current-time-line" style="left: 675px;"></div>
+                    
+                    <div class="parking-bar" style="left: 150px; width: 900px;" data-parking='{"id":"AP-001","name":"停场维修","deadline":"3月22日 18:00","manager":"张三"}'>
+                      <div class="flex items-center justify-between h-full">
+                        <div class="flex items-center space-x-2">
+                          <span class="text-xs font-semibold text-white">AP-001</span>
+                          <span class="text-xs text-white/80">停场维修</span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs text-white/70">
+                          <span>期限: 3月22日 18:00</span>
+                          <span>负责人: 张三</span>
+                        </div>
+                      </div>
+                      <div class="task-block" style="position: absolute; bottom: 4px; left: 8px; width: 180px;">
+                        <span class="text-xs text-white truncate">发动机检修</span>
+                      </div>
+                    </div>
+                    
+                    <div class="flight-bar pending" style="left: 1200px; width: 150px;" data-flight='{"no":"CZ3101","depTime":"16:00","depAirport":"CAN","arrTime":"19:15","arrAirport":"PEK","actual":"预计"}'>
+                      <div class="flight-departure">
+                        <span class="text-xs text-white font-medium">16:00</span>
+                        <span class="text-xs text-white/70 font-mono">CAN</span>
+                      </div>
+                      <div class="flight-center">
+                        <span class="text-sm text-white font-semibold">CZ3101</span>
+                      </div>
+                      <div class="flight-arrival">
+                        <span class="text-xs text-white font-medium">19:15</span>
+                        <span class="text-xs text-white/70 font-mono">PEK</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="gantt-row flex h-24 border-b border-neutral-100">
+                  <div class="aircraft-label-fixed w-36 flex-shrink-0 p-3 border-r border-neutral-200 flex flex-col justify-center bg-white">
+                    <p class="text-sm font-semibold text-neutral-900">B-5678</p>
+                    <p class="text-xs text-neutral-500">A320-200</p>
+                  </div>
+                  <div class="flex-1 relative time-grid-hour" style="width: 1800px;">
+                    <div class="parking-bar" style="left: 450px; width: 600px;" data-parking='{"id":"AP-002","name":"定检","deadline":"3月21日 20:00","manager":"李四"}'>
+                      <div class="flex items-center justify-between h-full">
+                        <div class="flex items-center space-x-2">
+                          <span class="text-xs font-semibold text-white">AP-002</span>
+                          <span class="text-xs text-white/80">定检</span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs text-white/70">
+                          <span>期限: 3月21日 20:00</span>
+                          <span>负责人: 李四</span>
+                        </div>
+                      </div>
+                      <div class="task-block" style="position: absolute; bottom: 4px; left: 8px; width: 120px;">
+                        <span class="text-xs text-white truncate">起落架检查</span>
+                      </div>
+                    </div>
+                    
+                    <div class="flight-bar" style="left: 75px; width: 150px;">
+                      <div class="flight-departure">
+                        <span class="text-xs text-white font-medium">01:00</span>
+                        <span class="text-xs text-white/70 font-mono">CAN</span>
+                      </div>
+                      <div class="flight-center">
+                        <span class="text-sm text-white font-semibold">CZ3201</span>
+                      </div>
+                      <div class="flight-arrival">
+                        <span class="text-xs text-white font-medium">04:30</span>
+                        <span class="text-xs text-white/70 font-mono">SHA</span>
+                      </div>
+                    </div>
+                    
+                    <div class="flight-bar pending" style="left: 1125px; width: 150px;">
+                      <div class="flight-departure">
+                        <span class="text-xs text-white font-medium">15:00</span>
+                        <span class="text-xs text-white/70 font-mono">SHA</span>
+                      </div>
+                      <div class="flight-center">
+                        <span class="text-sm text-white font-semibold">CZ3202</span>
+                      </div>
+                      <div class="flight-arrival">
+                        <span class="text-xs text-white font-medium">18:00</span>
+                        <span class="text-xs text-white/70 font-mono">CAN</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="gantt-row flex h-24 border-b border-neutral-100">
+                  <div class="aircraft-label-fixed w-36 flex-shrink-0 p-3 border-r border-neutral-200 flex flex-col justify-center bg-white">
+                    <p class="text-sm font-semibold text-neutral-900">B-9012</p>
+                    <p class="text-xs text-neutral-500">B737-800</p>
+                  </div>
+                  <div class="flex-1 relative time-grid-hour" style="width: 1800px;">
+                    <div class="parking-bar" style="left: 0px; width: 750px;" data-parking='{"id":"AP-003","name":"换发","deadline":"3月20日 10:00","manager":"王五"}'>
+                      <div class="flex items-center justify-between h-full">
+                        <div class="flex items-center space-x-2">
+                          <span class="text-xs font-semibold text-white">AP-003</span>
+                          <span class="text-xs text-white/80">换发</span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs text-white/70">
+                          <span>期限: 3月20日 10:00</span>
+                          <span>负责人: 王五</span>
+                        </div>
+                      </div>
+                      <div class="task-block" style="position: absolute; bottom: 4px; left: 8px; width: 200px;">
+                        <span class="text-xs text-white truncate">发动机更换</span>
+                      </div>
+                      <div class="task-block warning" style="position: absolute; bottom: 4px; left: 216px; width: 80px;">
+                        <span class="text-xs text-white truncate">测试</span>
+                      </div>
+                    </div>
+                    
+                    <div class="flight-bar pending" style="left: 825px; width: 150px;">
+                      <div class="flight-departure">
+                        <span class="text-xs text-white font-medium">11:00</span>
+                        <span class="text-xs text-white/70 font-mono">CAN</span>
+                      </div>
+                      <div class="flight-center">
+                        <span class="text-sm text-white font-semibold">CZ3301</span>
+                      </div>
+                      <div class="flight-arrival">
+                        <span class="text-xs text-white font-medium">14:00</span>
+                        <span class="text-xs text-white/70 font-mono">PEK</span>
+                      </div>
+                    </div>
+                    
+                    <div class="flight-bar pending" style="left: 1350px; width: 150px;">
+                      <div class="flight-departure">
+                        <span class="text-xs text-white font-medium">18:00</span>
+                        <span class="text-xs text-white/70 font-mono">PEK</span>
+                      </div>
+                      <div class="flight-center">
+                        <span class="text-sm text-white font-semibold">CZ3302</span>
+                      </div>
+                      <div class="flight-arrival">
+                        <span class="text-xs text-white font-medium">21:00</span>
+                        <span class="text-xs text-white/70 font-mono">CAN</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="gantt-row flex h-24 border-b border-neutral-100">
+                  <div class="aircraft-label-fixed w-36 flex-shrink-0 p-3 border-r border-neutral-200 flex flex-col justify-center bg-white">
+                    <p class="text-sm font-semibold text-neutral-900">B-3456</p>
+                    <p class="text-xs text-neutral-500">A320-200</p>
+                  </div>
+                  <div class="flex-1 relative time-grid-hour" style="width: 1800px;">
+                    <div class="parking-bar" style="left: 1050px; width: 600px; background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%); border: 2px dashed #475569;" data-parking='{"id":"AP-004","name":"计划停场","deadline":"3月23日 12:00","manager":"待定"}'>
+                      <div class="flex items-center justify-between h-full">
+                        <div class="flex items-center space-x-2">
+                          <span class="text-xs font-semibold text-white">AP-004</span>
+                          <span class="text-xs text-white/80">计划停场</span>
+                        </div>
+                        <div class="flex items-center space-x-3 text-xs text-white/70">
+                          <span>期限: 3月23日 12:00</span>
+                          <span>负责人: 待定</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="flight-bar" style="left: 75px; width: 150px;">
+                      <div class="flight-departure">
+                        <span class="text-xs text-white font-medium">01:00</span>
+                        <span class="text-xs text-white/70 font-mono">CAN</span>
+                      </div>
+                      <div class="flight-center">
+                        <span class="text-sm text-white font-semibold">CZ3401</span>
+                      </div>
+                      <div class="flight-arrival">
+                        <span class="text-xs text-white font-medium">03:30</span>
+                        <span class="text-xs text-white/70 font-mono">CTU</span>
+                      </div>
+                    </div>
+                    
+                    <div class="flight-bar" style="left: 450px; width: 150px;">
+                      <div class="flight-departure">
+                        <span class="text-xs text-white font-medium">06:00</span>
+                        <span class="text-xs text-white/70 font-mono">CTU</span>
+                      </div>
+                      <div class="flight-center">
+                        <span class="text-sm text-white font-semibold">CZ3402</span>
+                      </div>
+                      <div class="flight-arrival">
+                        <span class="text-xs text-white font-medium">08:30</span>
+                        <span class="text-xs text-white/70 font-mono">CAN</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="gantt-row flex h-24 border-b border-neutral-100">
+                  <div class="aircraft-label-fixed w-36 flex-shrink-0 p-3 border-r border-neutral-200 flex flex-col justify-center bg-white">
+                    <p class="text-sm font-semibold text-neutral-900">B-7890</p>
+                    <p class="text-xs text-neutral-500">B737-MAX</p>
+                  </div>
+                  <div class="flex-1 relative time-grid-hour" style="width: 1800px;">
+                    <div class="flight-bar" style="left: 75px; width: 150px;">
+                      <div class="flight-departure">
+                        <span class="text-xs text-white font-medium">01:00</span>
+                        <span class="text-xs text-white/70 font-mono">CAN</span>
+                      </div>
+                      <div class="flight-center">
+                        <span class="text-sm text-white font-semibold">CZ3501</span>
+                      </div>
+                      <div class="flight-arrival">
+                        <span class="text-xs text-white font-medium">04:00</span>
+                        <span class="text-xs text-white/70 font-mono">SZX</span>
+                      </div>
+                    </div>
+                    
+                    <div class="flight-bar" style="left: 450px; width: 150px;">
+                      <div class="flight-departure">
+                        <span class="text-xs text-white font-medium">06:00</span>
+                        <span class="text-xs text-white/70 font-mono">SZX</span>
+                      </div>
+                      <div class="flight-center">
+                        <span class="text-sm text-white font-semibold">CZ3502</span>
+                      </div>
+                      <div class="flight-arrival">
+                        <span class="text-xs text-white font-medium">09:00</span>
+                        <span class="text-xs text-white/70 font-mono">CAN</span>
+                      </div>
+                    </div>
+                    
+                    <div class="flight-bar pending" style="left: 825px; width: 150px;">
+                      <div class="flight-departure">
+                        <span class="text-xs text-white font-medium">11:00</span>
+                        <span class="text-xs text-white/70 font-mono">CAN</span>
+                      </div>
+                      <div class="flight-center">
+                        <span class="text-sm text-white font-semibold">CZ3503</span>
+                      </div>
+                      <div class="flight-arrival">
+                        <span class="text-xs text-white font-medium">14:00</span>
+                        <span class="text-xs text-white/70 font-mono">HGH</span>
+                      </div>
+                    </div>
+                    
+                    <div class="flight-bar pending" style="left: 1350px; width: 150px;">
+                      <div class="flight-departure">
+                        <span class="text-xs text-white font-medium">18:00</span>
+                        <span class="text-xs text-white/70 font-mono">HGH</span>
+                      </div>
+                      <div class="flight-center">
+                        <span class="text-sm text-white font-semibold">CZ3504</span>
+                      </div>
+                      <div class="flight-arrival">
+                        <span class="text-xs text-white font-medium">20:30</span>
+                        <span class="text-xs text-white/70 font-mono">CAN</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="taskDetailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4">
+      <div class="px-6 py-4 border-b border-neutral-200 flex items-center justify-between">
+        <h3 class="text-lg font-medium text-neutral-900">任务详情</h3>
+        <button onclick="document.getElementById('taskDetailModal').classList.add('hidden')" class="text-neutral-400 hover:text-neutral-500">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="px-6 py-4 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-neutral-500 mb-1">任务号</label>
+            <p class="text-sm font-medium text-neutral-900" id="modalTaskId">TASK-2024-001</p>
+          </div>
+          <div>
+            <label class="block text-xs text-neutral-500 mb-1">任务名称</label>
+            <p class="text-sm font-medium text-neutral-900" id="modalTaskName">发动机定期检修</p>
+          </div>
+          <div>
+            <label class="block text-xs text-neutral-500 mb-1">任务类型</label>
+            <p class="text-sm text-neutral-700" id="modalTaskType">定期检修</p>
+          </div>
+          <div>
+            <label class="block text-xs text-neutral-500 mb-1">机型</label>
+            <p class="text-sm text-neutral-700" id="modalAircraft">B737</p>
+          </div>
+          <div>
+            <label class="block text-xs text-neutral-500 mb-1">预计工时</label>
+            <p class="text-sm text-neutral-700" id="modalDuration">5天</p>
+          </div>
+          <div>
+            <label class="block text-xs text-neutral-500 mb-1">所需资质</label>
+            <p class="text-sm text-neutral-700">发动机维修执照</p>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-neutral-500 mb-1">所需航材</label>
+          <div class="text-sm text-neutral-700 bg-neutral-50 rounded-lg p-3">
+            发动机滤芯 x2、液压油 50L、密封圈套装 x1
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-neutral-200 flex justify-end">
+        <button onclick="document.getElementById('taskDetailModal').classList.add('hidden')" class="px-4 py-2 bg-csa-600 text-white rounded-lg text-sm font-medium hover:bg-csa-700">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="flightTooltip" class="hidden fixed bg-neutral-900 text-white text-xs rounded-lg px-4 py-3 z-50 shadow-xl pointer-events-none">
+    <div class="space-y-2">
+      <div class="flex items-center space-x-2">
+        <svg class="w-4 h-4 text-csa-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        </svg>
+        <span class="font-semibold" id="tooltipFlightNo">CZ3101</span>
+      </div>
+      <div class="flex items-center space-x-3 text-neutral-300">
+        <span id="tooltipDepTime">16:00</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+        </svg>
+        <span id="tooltipArrTime">19:15</span>
+      </div>
+      <div class="flex items-center space-x-3 text-neutral-300">
+        <span class="font-mono" id="tooltipDepAirport">CAN</span>
+        <span class="text-neutral-500">→</span>
+        <span class="font-mono" id="tooltipArrAirport">PEK</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="dropFeedback" class="hidden fixed bg-csaGold-500 text-white text-sm rounded-lg px-4 py-2 z-50 shadow-lg">
+    <div class="flex items-center space-x-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      <span>任务已成功编排</span>
+    </div>
+  </div>
+
+  <script>
+    const ganttContainer = document.getElementById('ganttContainer');
+    const tooltip = document.getElementById('flightTooltip');
+    const dropFeedback = document.getElementById('dropFeedback');
+    
+    let zoomLevel = 1;
+    
+    ganttContainer.addEventListener('wheel', function(e) {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        zoomLevel = Math.max(0.5, Math.min(2, zoomLevel + delta));
+        document.querySelector('.zoom-indicator').style.setProperty('--zoom-level', (zoomLevel / 2 * 100) + '%');
+      }
+    });
+
+    function showTaskDetail(btn) {
+      const card = btn.closest('.task-card');
+      const data = JSON.parse(card.dataset.task);
+      document.getElementById('modalTaskId').textContent = data.id;
+      document.getElementById('modalTaskName').textContent = data.name;
+      document.getElementById('modalTaskType').textContent = data.type;
+      document.getElementById('modalAircraft').textContent = data.aircraft;
+      document.getElementById('modalDuration').textContent = data.duration;
+      document.getElementById('taskDetailModal').classList.remove('hidden');
+    }
+
+    document.querySelectorAll('.flight-bar').forEach(bar => {
+      bar.addEventListener('mouseenter', function(e) {
+        const data = this.dataset.flight ? JSON.parse(this.dataset.flight) : {
+          no: this.querySelector('.flight-center span').textContent,
+          depTime: this.querySelector('.flight-departure span:first-child').textContent,
+          depAirport: this.querySelector('.flight-departure span:last-child').textContent,
+          arrTime: this.querySelector('.flight-arrival span:first-child').textContent,
+          arrAirport: this.querySelector('.flight-arrival span:last-child').textContent
+        };
+        
+        document.getElementById('tooltipFlightNo').textContent = data.no;
+        document.getElementById('tooltipDepTime').textContent = data.depTime;
+        document.getElementById('tooltipArrTime').textContent = data.arrTime;
+        document.getElementById('tooltipDepAirport').textContent = data.depAirport;
+        document.getElementById('tooltipArrAirport').textContent = data.arrAirport;
+        
+        tooltip.style.left = (e.pageX + 15) + 'px';
+        tooltip.style.top = (e.pageY + 15) + 'px';
+        tooltip.classList.remove('hidden');
+      });
+      
+      bar.addEventListener('mousemove', function(e) {
+        tooltip.style.left = (e.pageX + 15) + 'px';
+        tooltip.style.top = (e.pageY + 15) + 'px';
+      });
+      
+      bar.addEventListener('mouseleave', function() {
+        tooltip.classList.add('hidden');
+      });
+    });
+
+    document.querySelectorAll('.task-card').forEach(card => {
+      card.addEventListener('dragstart', function(e) {
+        this.classList.add('dragging');
+        e.dataTransfer.setData('application/json', this.dataset.task);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      
+      card.addEventListener('dragend', function() {
+        this.classList.remove('dragging');
+      });
+    });
+
+    document.querySelectorAll('.parking-bar').forEach(bar => {
+      bar.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        this.classList.add('highlight');
+      });
+      
+      bar.addEventListener('dragleave', function() {
+        this.classList.remove('highlight');
+      });
+      
+      bar.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('highlight');
+        
+        const taskData = JSON.parse(e.dataTransfer.getData('application/json'));
+        const parkingData = JSON.parse(this.dataset.parking);
+        
+        const rect = this.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const hourWidth = 75;
+        const snappedHour = Math.round(x / hourWidth);
+        
+        console.log('任务', taskData.name, '放入停场条', parkingData.id, '位置:', snappedHour + '点');
+        
+        dropFeedback.style.left = (e.clientX - 60) + 'px';
+        dropFeedback.style.top = (e.clientY - 20) + 'px';
+        dropFeedback.classList.remove('hidden');
+        
+        setTimeout(() => {
+          dropFeedback.classList.add('hidden');
+        }, 2000);
+      });
+    });
+  </script>
+</body>
+</html>

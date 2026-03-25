@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>表单组件 - 原型模板</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc',
+              400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1',
+              800: '#075985', 900: '#0c4a6e',
+            },
+            neutral: {
+              50: '#fafafa', 100: '#f5f5f5', 200: '#e5e5e5', 300: '#d4d4d4',
+              400: '#a3a3a3', 500: '#737373', 600: '#525252', 700: '#404040',
+              800: '#262626', 900: '#171717',
+            },
+            success: '#10b981', warning: '#f59e0b', danger: '#ef4444', info: '#3b82f6',
+          }
+        }
+      }
+    }
+  </script>
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-neutral-100 min-h-screen p-8">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold text-neutral-900 mb-8">表单组件</h1>
+
+    <section class="bg-white rounded-xl shadow-sm p-8 mb-8">
+      <h2 class="text-lg font-semibold text-neutral-800 mb-6">基础输入框</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">默认输入框</label>
+          <input type="text" class="w-full px-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="请输入内容">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">带图标输入框</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+            <input type="text" class="w-full pl-10 pr-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" placeholder="搜索...">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">禁用状态</label>
+          <input type="text" class="w-full px-4 py-2.5 border border-neutral-200 rounded-lg text-sm bg-neutral-50 text-neutral-500 cursor-not-allowed" placeholder="禁用状态" disabled>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">错误状态</label>
+          <input type="text" class="w-full px-4 py-2.5 border border-danger rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent" value="错误内容">
+          <p class="mt-1 text-sm text-danger">请输入正确的内容</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">成功状态</label>
+          <input type="text" class="w-full px-4 py-2.5 border border-success rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent" value="正确内容">
+          <p class="mt-1 text-sm text-success">验证通过</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl shadow-sm p-8 mb-8">
+      <h2 class="text-lg font-semibold text-neutral-800 mb-6">下拉选择</h2>
+      <div class="grid grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">单选下拉</label>
+          <select class="w-full px-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+            <option>请选择选项</option>
+            <option>选项一</option>
+            <option>选项二</option>
+            <option>选项三</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">分组下拉</label>
+          <select class="w-full px-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+            <optgroup label="热门城市">
+              <option>北京</option>
+              <option>上海</option>
+              <option>广州</option>
+            </optgroup>
+            <optgroup label="其他城市">
+              <option>杭州</option>
+              <option>深圳</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl shadow-sm p-8 mb-8">
+      <h2 class="text-lg font-semibold text-neutral-800 mb-6">日期与时间</h2>
+      <div class="grid grid-cols-3 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">日期选择</label>
+          <input type="date" class="w-full px-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">时间选择</label>
+          <input type="time" class="w-full px-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">日期时间</label>
+          <input type="datetime-local" class="w-full px-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+      </div>
+      <div class="mt-6">
+        <label class="block text-sm font-medium text-neutral-700 mb-2">日期范围</label>
+        <div class="flex items-center space-x-3">
+          <input type="date" class="flex-1 px-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <span class="text-neutral-400">至</span>
+          <input type="date" class="flex-1 px-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl shadow-sm p-8 mb-8">
+      <h2 class="text-lg font-semibold text-neutral-800 mb-6">数字输入</h2>
+      <div class="grid grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">数字输入</label>
+          <input type="number" class="w-full px-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="0">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">范围滑块</label>
+          <div class="pt-2">
+            <input type="range" class="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-primary-600">
+            <div class="flex justify-between text-xs text-neutral-500 mt-1">
+              <span>0</span>
+              <span>100</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl shadow-sm p-8 mb-8">
+      <h2 class="text-lg font-semibold text-neutral-800 mb-6">多行文本</h2>
+      <div>
+        <label class="block text-sm font-medium text-neutral-700 mb-2">文本域</label>
+        <textarea rows="4" class="w-full px-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" placeholder="请输入详细描述..."></textarea>
+        <p class="mt-1 text-xs text-neutral-400 text-right">0/500</p>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl shadow-sm p-8 mb-8">
+      <h2 class="text-lg font-semibold text-neutral-800 mb-6">复选框与单选</h2>
+      <div class="grid grid-cols-2 gap-8">
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-3">复选框</label>
+          <div class="space-y-3">
+            <label class="flex items-center">
+              <input type="checkbox" class="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500" checked>
+              <span class="ml-3 text-sm text-neutral-700">选项一（已选中）</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" class="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500">
+              <span class="ml-3 text-sm text-neutral-700">选项二</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" class="w-4 h-4 text-neutral-300 rounded cursor-not-allowed" disabled>
+              <span class="ml-3 text-sm text-neutral-400">禁用选项</span>
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-3">单选框</label>
+          <div class="space-y-3">
+            <label class="flex items-center">
+              <input type="radio" name="radio" class="w-4 h-4 text-primary-600 border-neutral-300 focus:ring-primary-500" checked>
+              <span class="ml-3 text-sm text-neutral-700">选项一（已选中）</span>
+            </label>
+            <label class="flex items-center">
+              <input type="radio" name="radio" class="w-4 h-4 text-primary-600 border-neutral-300 focus:ring-primary-500">
+              <span class="ml-3 text-sm text-neutral-700">选项二</span>
+            </label>
+            <label class="flex items-center">
+              <input type="radio" name="radio" class="w-4 h-4 text-neutral-300 cursor-not-allowed" disabled>
+              <span class="ml-3 text-sm text-neutral-400">禁用选项</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl shadow-sm p-8 mb-8">
+      <h2 class="text-lg font-semibold text-neutral-800 mb-6">开关</h2>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-neutral-700">开启状态</p>
+            <p class="text-xs text-neutral-500">这是开关的描述文字</p>
+          </div>
+          <button class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-primary-600 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" role="switch" aria-checked="true">
+            <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-5"></span>
+          </button>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-neutral-700">关闭状态</p>
+            <p class="text-xs text-neutral-500">这是开关的描述文字</p>
+          </div>
+          <button class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-neutral-200 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" role="switch" aria-checked="false">
+            <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-xl shadow-sm p-8">
+      <h2 class="text-lg font-semibold text-neutral-800 mb-6">文件上传</h2>
+      <div class="border-2 border-dashed border-neutral-300 rounded-lg p-8 text-center hover:border-primary-500 transition-colors cursor-pointer">
+        <svg class="w-12 h-12 mx-auto text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+        <p class="mt-4 text-sm text-neutral-600">拖拽文件到此处，或 <span class="text-primary-600 font-medium">点击上传</span></p>
+        <p class="mt-2 text-xs text-neutral-400">支持 JPG、PNG、PDF 格式，最大 10MB</p>
+      </div>
+      
+      <div class="mt-4 space-y-2">
+        <div class="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+          <div class="flex items-center">
+            <svg class="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <div class="ml-3">
+              <p class="text-sm font-medium text-neutral-700">document.pdf</p>
+              <p class="text-xs text-neutral-500">2.4 MB</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="w-24 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+              <div class="h-full bg-primary-500 rounded-full" style="width: 75%"></div>
+            </div>
+            <span class="text-xs text-neutral-500">75%</span>
+            <button class="p-1 text-neutral-400 hover:text-danger transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+          <div class="flex items-center">
+            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <div class="ml-3">
+              <p class="text-sm font-medium text-neutral-700">image.png</p>
+              <p class="text-xs text-neutral-500">1.2 MB</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs text-success">上传成功</span>
+            <button class="p-1 text-neutral-400 hover:text-danger transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

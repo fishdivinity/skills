@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>任务管理 - 原型模板</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e' },
+            neutral: { 50: '#fafafa', 100: '#f5f5f5', 200: '#e5e5e5', 300: '#d4d4d4', 400: '#a3a3a3', 500: '#737373', 600: '#525252', 700: '#404040', 800: '#262626', 900: '#171717' },
+            success: '#10b981', warning: '#f59e0b', danger: '#ef4444', info: '#3b82f6',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .table-container { overflow-x: auto; }
+    .table-fixed-left { position: sticky; left: 0; z-index: 10; background: white; }
+    .table-fixed-right { position: sticky; right: 0; z-index: 10; background: white; }
+    .table-fixed-right::before { content: ''; position: absolute; left: -20px; top: 0; bottom: 0; width: 20px; background: linear-gradient(to right, transparent, white); }
+  </style>
+</head>
+<body class="bg-neutral-100 min-h-screen">
+  <div class="flex min-h-screen">
+    <aside class="w-60 bg-neutral-900 text-white flex flex-col fixed h-full z-20">
+      <div class="h-16 flex items-center px-6 border-b border-neutral-800">
+        <div class="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </div>
+        <span class="ml-3 text-lg font-semibold">管理系统</span>
+      </div>
+      <nav class="flex-1 py-4">
+        <a href="#" class="flex items-center px-6 py-3 bg-neutral-800 text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+          </svg>
+          <span class="ml-3">任务管理</span>
+        </a>
+        <a href="#" class="flex items-center px-6 py-3 text-neutral-400 hover:bg-neutral-800 hover:text-white transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          <span class="ml-3">数据统计</span>
+        </a>
+      </nav>
+    </aside>
+
+    <div class="flex-1 ml-60">
+      <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 sticky top-0 z-10">
+        <div class="flex items-center">
+          <nav class="flex items-center text-sm text-neutral-500">
+            <a href="#" class="hover:text-neutral-700">首页</a>
+            <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="text-neutral-900">任务管理</span>
+          </nav>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-sm font-medium">U</div>
+        </div>
+      </header>
+
+      <main class="p-6">
+        <div class="mb-6">
+          <h1 class="text-2xl font-semibold text-neutral-900">任务管理</h1>
+          <p class="text-neutral-500 mt-1">查看、搜索、筛选和管理所有任务</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-neutral-200">
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="relative flex-1 min-w-64">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                </div>
+                <input type="text" placeholder="搜索任务号、名称、机号..." class="w-full pl-9 pr-4 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+              </div>
+              <select class="px-4 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                <option>全部状态</option>
+                <option>待准备</option>
+                <option>待编排</option>
+                <option>进行中</option>
+                <option>已完成</option>
+              </select>
+              <select class="px-4 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                <option>全部类型</option>
+                <option>定期检修</option>
+                <option>故障排除</option>
+                <option>部件更换</option>
+              </select>
+              <select class="px-4 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+                <option>全部优先级</option>
+                <option>高</option>
+                <option>中</option>
+                <option>低</option>
+              </select>
+              <button class="px-4 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 flex items-center transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+                更多筛选
+              </button>
+            </div>
+          </div>
+
+          <div class="p-4 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
+            <div class="flex items-center space-x-3">
+              <span class="text-sm text-neutral-500">已选择 <span class="font-medium text-neutral-900" id="selectedCount">0</span> 项</span>
+              <button class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed" id="batchBtn" disabled>
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+                组虚拟包
+              </button>
+            </div>
+            <div class="flex items-center space-x-3">
+              <button class="px-4 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 flex items-center transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                导出
+              </button>
+              <button class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 flex items-center transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                新增任务
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="min-w-full">
+              <thead class="bg-neutral-50 border-b border-neutral-200">
+                <tr>
+                  <th class="table-fixed-left px-4 py-3 text-left w-12">
+                    <input type="checkbox" class="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500" id="selectAll">
+                  </th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">序号</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">任务号</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">任务名称</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">任务类型</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">机型</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">机号</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">计划开始</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">计划结束</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">状态</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">优先级</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">停场条</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">发布单位</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap">责任人</th>
+                  <th class="table-fixed-right px-4 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider whitespace-nowrap w-32">操作</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-neutral-200">
+                <tr class="hover:bg-neutral-50 transition-colors">
+                  <td class="table-fixed-left px-4 py-4 bg-white">
+                    <input type="checkbox" class="task-checkbox w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500">
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">1</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-primary-600">TASK-2024-001</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-900">发动机定期检修</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-600">定期检修</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-600">B737</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-900">B-1234</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">2024-03-20</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">2024-03-25</td>
+                  <td class="px-4 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded bg-warning/10 text-warning">待准备</span>
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded bg-danger/10 text-danger">高</span>
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">-</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-600">技术部</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-900">张三</td>
+                  <td class="table-fixed-right px-4 py-4 whitespace-nowrap text-sm bg-white">
+                    <div class="flex items-center space-x-2">
+                      <button class="text-primary-600 hover:text-primary-700 font-medium">详情</button>
+                      <button class="text-primary-600 hover:text-primary-700 font-medium">准备</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-neutral-50 transition-colors">
+                  <td class="table-fixed-left px-4 py-4 bg-white">
+                    <input type="checkbox" class="task-checkbox w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500">
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">2</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-primary-600">TASK-2024-002</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-900">起落架故障排除</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-600">故障排除</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-600">A320</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-900">B-5678</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">2024-03-21</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">2024-03-22</td>
+                  <td class="px-4 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded bg-primary-100 text-primary-700">待编排</span>
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded bg-danger/10 text-danger">高</span>
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-primary-600">AP-001</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-600">维修部</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-900">李四</td>
+                  <td class="table-fixed-right px-4 py-4 whitespace-nowrap text-sm bg-white">
+                    <div class="flex items-center space-x-2">
+                      <button class="text-primary-600 hover:text-primary-700 font-medium">详情</button>
+                      <button class="text-primary-600 hover:text-primary-700 font-medium">准备</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-neutral-50 transition-colors">
+                  <td class="table-fixed-left px-4 py-4 bg-white">
+                    <input type="checkbox" class="task-checkbox w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500">
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">3</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-primary-600">TASK-2024-003</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-900">航电系统部件更换</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-600">部件更换</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-600">B737</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-900">B-9012</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">2024-03-22</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">2024-03-23</td>
+                  <td class="px-4 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded bg-success/10 text-success">进行中</span>
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded bg-warning/10 text-warning">中</span>
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-primary-600">AP-002</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-600">航电部</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-900">王五</td>
+                  <td class="table-fixed-right px-4 py-4 whitespace-nowrap text-sm bg-white">
+                    <div class="flex items-center space-x-2">
+                      <button class="text-primary-600 hover:text-primary-700 font-medium">详情</button>
+                      <button class="text-primary-600 hover:text-primary-700 font-medium">准备</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-neutral-50 transition-colors">
+                  <td class="table-fixed-left px-4 py-4 bg-white">
+                    <input type="checkbox" class="task-checkbox w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500">
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">4</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-primary-600">TASK-2024-004</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-900">机身蒙皮修复</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-600">故障排除</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-600">A320</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-900">B-3456</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">2024-03-18</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-500">2024-03-20</td>
+                  <td class="px-4 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded bg-neutral-100 text-neutral-700">已完成</span>
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 text-xs font-medium rounded bg-neutral-100 text-neutral-600">低</span>
+                  </td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-primary-600">AP-003</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-600">结构部</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-neutral-900">赵六</td>
+                  <td class="table-fixed-right px-4 py-4 whitespace-nowrap text-sm bg-white">
+                    <div class="flex items-center space-x-2">
+                      <button class="text-primary-600 hover:text-primary-700 font-medium">详情</button>
+                      <button class="text-neutral-400 cursor-not-allowed">准备</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="px-6 py-4 border-t border-neutral-200 flex items-center justify-between">
+            <div class="text-sm text-neutral-500">
+              显示 <span class="font-medium text-neutral-900">1-4</span> 条，共 <span class="font-medium text-neutral-900">56</span> 条
+            </div>
+            <div class="flex items-center space-x-2">
+              <button class="px-3 py-1 border border-neutral-300 rounded text-sm text-neutral-600 hover:bg-neutral-50 transition-colors disabled:opacity-50" disabled>上一页</button>
+              <button class="px-3 py-1 bg-primary-600 text-white rounded text-sm">1</button>
+              <button class="px-3 py-1 border border-neutral-300 rounded text-sm text-neutral-600 hover:bg-neutral-50 transition-colors">2</button>
+              <button class="px-3 py-1 border border-neutral-300 rounded text-sm text-neutral-600 hover:bg-neutral-50 transition-colors">3</button>
+              <span class="text-neutral-400">...</span>
+              <button class="px-3 py-1 border border-neutral-300 rounded text-sm text-neutral-600 hover:bg-neutral-50 transition-colors">14</button>
+              <button class="px-3 py-1 border border-neutral-300 rounded text-sm text-neutral-600 hover:bg-neutral-50 transition-colors">下一页</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4">
+      <div class="px-6 py-4 border-b border-neutral-200 flex items-center justify-between">
+        <h3 class="text-lg font-medium text-neutral-900">创建虚拟包</h3>
+        <button onclick="document.getElementById('modal').classList.add('hidden')" class="text-neutral-400 hover:text-neutral-500">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="px-6 py-4 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">虚拟包名称</label>
+          <input type="text" class="w-full px-4 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="请输入虚拟包名称">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">包含任务</label>
+          <div class="text-sm text-neutral-600 bg-neutral-50 rounded-lg p-3">
+            <p>TASK-2024-001, TASK-2024-002</p>
+            <p class="text-xs text-neutral-500 mt-1">共 2 个任务</p>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">备注</label>
+          <textarea rows="3" class="w-full px-4 py-2 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" placeholder="可选"></textarea>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-neutral-200 flex justify-end space-x-3">
+        <button onclick="document.getElementById('modal').classList.add('hidden')" class="px-4 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50">取消</button>
+        <button class="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700">确定创建</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.task-checkbox');
+    const selectedCount = document.getElementById('selectedCount');
+    const batchBtn = document.getElementById('batchBtn');
+    const modal = document.getElementById('modal');
+
+    function updateSelection() {
+      const checked = document.querySelectorAll('.task-checkbox:checked');
+      selectedCount.textContent = checked.length;
+      batchBtn.disabled = checked.length === 0;
+    }
+
+    selectAll.addEventListener('change', function() {
+      checkboxes.forEach(cb => cb.checked = this.checked);
+      updateSelection();
+    });
+
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', updateSelection);
+    });
+
+    batchBtn.addEventListener('click', function() {
+      modal.classList.remove('hidden');
+    });
+  </script>
+</body>
+</html>
