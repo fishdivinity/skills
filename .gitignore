@@ -1,0 +1,19 @@
+# 排除Go构建产物
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# 排除IDE和编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 排除测试覆盖率文件
+coverage.out
+
+# 排除环境变量文件
+.env

@@ -14,7 +14,7 @@
 - 项目的主要目的是什么？
 
 ### 2. 技术栈确认
-- Go 版本要求？（最低 1.26.0）
+- Go 版本要求？（最低 1.26.1）
 - 是否需要对接数据库？使用什么数据库？（PostgreSQL、MySQL、MongoDB等）
 - 是否需要缓存？（Redis、Memcached等）
 - 是否需要消息队列？（Message Queue: Kafka、RabbitMQ等）

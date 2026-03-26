@@ -20,22 +20,16 @@ Professional code review skill for Go projects, designed to handle both small ch
 ## 0. Review Workflow (Critical)
 
 ### Step 1: Scope Assessment
-
-| Scope | Indicators | Strategy |
-|-------|------------|----------|
-| **Small** | Single file, <200 lines | Direct review |
-| **Medium** | 200-500 lines, related changes | Focused review |
-| **Large** | >500 lines, cross-module | **Incremental review** |
-| **Project-wide** | Architecture changes | **Project analysis first** |
+- **Small**: Single file, <200 lines → Direct review
+- **Medium**: 200-500 lines, related changes → Focused review
+- **Large**: >500 lines, cross-module → Incremental review
+- **Project-wide**: Architecture changes → Project analysis first
 
 ### Step 2: Context Gathering
-
-| File Count | Strategy |
-|------------|----------|
-| 1-5 files | Read all changed files |
-| 6-15 files | Read primary, summarize secondary |
-| 16-30 files | Read changed + direct dependencies |
-| 31+ files | **Use Memory-Based Review** |
+- **1-5 files**: Read all changed files
+- **6-15 files**: Read primary, summarize secondary
+- **16-30 files**: Read changed + direct dependencies
+- **31+ files**: Use Memory-Based Review
 
 **Context Rules:**
 - Get git diff first (not entire codebase)
@@ -43,15 +37,26 @@ Professional code review skill for Go projects, designed to handle both small ch
 - Skip: unchanged dependencies, generated code, vendored packages
 
 ### Step 3: Execute Review
+- **Security Review** → [docs/security-review.md](docs/security-review.md)
+- **Quality Review** → [docs/quality-review.md](docs/quality-review.md)
+- **Architecture Review** → [docs/architecture-review.md](docs/architecture-review.md)
+- **Testing Review** → [docs/testing-review.md](docs/testing-review.md)
+- **Scale Assessment** → [docs/scale-assessment.md](docs/scale-assessment.md)
+- **Cost-Benefit Analysis** → [docs/cost-benefit-analysis.md](docs/cost-benefit-analysis.md)
+- **Over-Engineering Detection** → [docs/over-engineering-detection.md](docs/over-engineering-detection.md)
+- **Implementation Complexity Assessment** → [docs/implementation-complexity.md](docs/implementation-complexity.md)
+- **Optimization Priority Calibration** → [docs/optimization-priority.md](docs/optimization-priority.md)
+- **Automated Analysis** → Use review tool for automated code analysis
 
-1. **Security Review** → [docs/security-review.md](docs/security-review.md)
-2. **Quality Review** → [docs/quality-review.md](docs/quality-review.md)
-3. **Architecture Review** → [docs/architecture-review.md](docs/architecture-review.md)
-4. **Testing Review** → [docs/testing-review.md](docs/testing-review.md)
-5. **Scale Assessment** → [docs/scale-assessment.md](docs/scale-assessment.md)
-6. **Cost-Benefit Analysis** → [docs/cost-benefit-analysis.md](docs/cost-benefit-analysis.md)
-7. **Over-Engineering Detection** → [docs/over-engineering-detection.md](docs/over-engineering-detection.md)
-8. **Implementation Complexity Assessment** → [docs/implementation-complexity.md](docs/implementation-complexity.md)
+### Step 4: Review Tool Integration
+- **Location**: `tools/review` (Windows: `tools/review.exe`)
+- **Usage**: 
+  - `tools/review analyze --path <project-path>`
+  - `tools/review report --format markdown`
+- **Build**: 
+  - `cd review && make install` (构建并安装到tools目录)
+  - `cd review && make build` (仅构建到bin目录)
+- **Features**: Map preallocation, duplicate code detection, scale detection, markdown reports
 
 ---
 
@@ -66,35 +71,20 @@ Professional code review skill for Go projects, designed to handle both small ch
 | **Performance** | N+1 queries, unbounded memory, blocking in hot paths |
 
 ### Common Anti-Patterns
-
-```go
-// WRONG: panic in business logic
-panic("something went wrong")
-
-// WRONG: ignored error
-_ = file.Close()
-
-// WRONG: global mutable state
-var db *sql.DB
-
-// WRONG: unparameterized SQL
-db.Query("SELECT * FROM users WHERE id = " + userID)
-
-// WRONG: context not passed
-func ProcessData(data []byte) error { ... }
-```
+- **Panic in business logic**: `panic("something went wrong")`
+- **Ignored error**: `_ = file.Close()`
+- **Global mutable state**: `var db *sql.DB`
+- **Unparameterized SQL**: `db.Query("SELECT * FROM users WHERE id = " + userID)`
+- **Context not passed**: `func ProcessData(data []byte) error { ... }`
 
 ---
 
 ## 2. Project-Specific Focus
-
-| Project Type | Focus Areas |
-|--------------|-------------|
-| **API Service** | Error handling, input validation, rate limiting |
-| **CLI Tool** | Flag parsing, error messages, exit codes |
-| **Library** | API stability, documentation, backward compatibility |
-| **Microservice** | Service discovery, circuit breakers, observability |
-| **Data Pipeline** | Memory management, error recovery, idempotency |
+- **API Service**: Error handling, input validation, rate limiting
+- **CLI Tool**: Flag parsing, error messages, exit codes
+- **Library**: API stability, documentation, backward compatibility
+- **Microservice**: Service discovery, circuit breakers, observability
+- **Data Pipeline**: Memory management, error recovery, idempotency
 
 **Details:** [docs/project-focus.md](docs/project-focus.md)
 
@@ -176,21 +166,9 @@ Use template: [templates/review-report.md](templates/review-report.md)
 
 ```
 go-code-review/
-├── SKILL.md                       # This file - main entry point
-├── docs/
-│   ├── security-review.md         # Security review checklist
-│   ├── quality-review.md          # Code quality checklist
-│   ├── architecture-review.md     # Architecture patterns review
-│   ├── testing-review.md          # Testing requirements
-│   ├── common-issues.md           # Common Go anti-patterns
-│   ├── project-focus.md           # Project-specific review focus
-│   ├── inconsistency-detection.md # Pattern inconsistency detection
-│   ├── memory-workflow.md         # Memory-based review workflow
-│   ├── scale-assessment.md        # Application scale assessment
-│   ├── cost-benefit-analysis.md   # Cost-benefit analysis
-│   ├── over-engineering-detection.md # Over-engineering detection
-│   └── implementation-complexity.md # Implementation complexity assessment
-└── templates/
-    ├── review-report.md           # Review report template
-    └── memory.md                  # Memory file template
+├── SKILL.md           # This file - main entry point
+├── review/            # Review tool source code
+├── docs/              # Review documentation
+├── tools/             # Built review tool
+└── templates/         # Review templates
 ```

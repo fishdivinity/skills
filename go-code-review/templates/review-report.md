@@ -115,6 +115,32 @@ Description of the improvement opportunity.
 
 ---
 
+## Scale-Based Recommendations
+
+### Application Scale Assessment
+- **Scale Category**: Small / Medium / Large
+- **Justification**: [Brief explanation based on user count, data volume, etc.]
+
+### Priority Calibration
+
+#### High Priority
+- [High Priority] Description - Expected ROI: XX% - Effort: X hours
+
+#### Medium Priority
+- [Medium Priority] Description - Expected ROI: XX% - Effort: X hours
+
+#### Low Priority
+- [Low Priority] Description - Expected ROI: XX% - Effort: X hours
+
+### Over-Engineering Warnings
+- [Over-Engineering] Description - Simplified Alternative: XXX - Reason: Not appropriate for {App Scale} application
+
+### Implementation Guidelines
+- **For {App Scale} application**: Focus on {key focus areas}
+- **Estimated Implementation Time**: X-X hours (calibrated for {App Scale} application)
+
+---
+
 ## Next Steps
 
 1. Address critical issues
