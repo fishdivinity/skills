@@ -1,26 +1,26 @@
 ---
 name: "frontend-development"
-description: "Frontend development best practices skill for production-ready HTML/CSS/JS projects. Invoke when user needs frontend development help, code review, or best practices guidance. NOT for prototyping or wireframing."
+description: "Frontend development skill for small demo projects and quick prototypes using HTML/CSS/JS. Invoke when user needs simple frontend demos or small-scale projects."
 ---
 
-# 前端开发最佳实践 Skill
+# 前端小Demo开发 Skill
 
 ## 核心定位
 
-本技能专注于**生产环境可用的前端代码**，目标是创建规范、可维护、高性能的前端项目。
+本技能专注于**小Demo和快速原型开发**，目标是创建简单、快速、可直接运行的前端小项目。
 
-### 与原型设计技能的区别
+### 与其他前端技能的区别
 
-| 特性 | 本技能（前端开发） | 原型设计技能 |
-|------|-------------------|-------------|
-| **目的** | 生产环境代码 | 快速可视化、需求沟通 |
-| **样式方案** | BEM 规范 + CSS 变量 | Tailwind CDN + 内联样式 |
-| **代码质量** | 完整、规范、可维护 | 简化、演示性质 |
-| **查看方式** | 需要开发服务器 | 双击 HTML 直接打开 |
+| 特性 | 本技能（前端小Demo） | 现代前端开发技能 | 原型设计技能 |
+|------|-------------------|---------------|-------------|
+| **目的** | 小Demo开发、快速验证 | 生产环境代码 | 快速可视化、需求沟通 |
+| **技术栈** | 纯 HTML/CSS/JS | React + TypeScript + Vite | Tailwind CDN + 内联样式 |
+| **代码质量** | 简单、直接、可运行 | 完整、规范、可维护 | 简化、演示性质 |
+| **查看方式** | 双击 HTML 直接打开 | 需要开发服务器 | 双击 HTML 直接打开 |
 
-**调用场景：** 生产环境前端代码开发、代码审查、性能优化、架构设计
+**调用场景：** 小Demo开发、快速概念验证、简单前端功能实现、学习示例
 
-**不应调用：** 快速原型绘制、概念可视化演示
+**不应调用：** 生产环境项目、复杂前端应用、需要现代框架的项目
 
 ---
 
