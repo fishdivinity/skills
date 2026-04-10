@@ -1,11 +1,24 @@
 ---
-name: "go-code-review"
-description: "Professional Go code review skill with context-aware strategies. Invoke when user requests code review, PR review, or quality assessment for Go projects."
+name: go-code-review
+description: Professional Go code review skill with context-aware strategies. Invoke when user requests code review, PR review, or quality assessment for Go projects.
 ---
 
 # Go Code Review Skill
 
 Professional code review skill for Go projects, designed to handle both small changes and large-scale codebases efficiently.
+
+## Table of Contents
+- [When to Invoke](#when-to-invoke)
+- [Review Workflow](#review-workflow)
+- [Quick Reference](#quick-reference)
+- [Project-Specific Focus](#project-specific-focus)
+- [Incremental Review Strategies](#incremental-review-strategies)
+- [Memory-Based Review](#memory-based-review)
+- [Review Output](#review-output)
+- [Best Practices](#best-practices)
+- [Tool Usage](#tool-usage)
+- [File Index](#file-index)
+- [AskUserQuestion Guidelines](#askuserquestion-guidelines)
 
 ## When to Invoke
 
@@ -17,7 +30,7 @@ Professional code review skill for Go projects, designed to handle both small ch
 
 ---
 
-## 0. Review Workflow (Critical)
+## Review Workflow
 
 ### Step 1: Scope Assessment
 - **Small**: Single file, <200 lines → Direct review
@@ -35,6 +48,7 @@ Professional code review skill for Go projects, designed to handle both small ch
 - Get git diff first (not entire codebase)
 - Read ONLY: changed files, direct imports, interface definitions
 - Skip: unchanged dependencies, generated code, vendored packages
+- **IMPORTANT**: Always check `.gitignore` to exclude non-project files
 
 ### Step 3: Execute Review
 - **Security Review** → [docs/security-review.md](docs/security-review.md)
@@ -60,7 +74,7 @@ Professional code review skill for Go projects, designed to handle both small ch
 
 ---
 
-## 1. Quick Reference
+## Quick Reference
 
 ### Critical Issues (Must Fix)
 
@@ -71,16 +85,12 @@ Professional code review skill for Go projects, designed to handle both small ch
 | **Performance** | N+1 queries, unbounded memory, blocking in hot paths |
 
 ### Common Anti-Patterns
-- **Panic in business logic**: `panic("something went wrong")`
-- **Ignored error**: `_ = file.Close()`
-- **Global mutable state**: `var db *sql.DB`
-- **Unparameterized SQL**: `db.Query("SELECT * FROM users WHERE id = " + userID)`
-- **Context not passed**: `func ProcessData(data []byte) error { ... }`
+For detailed anti-patterns and examples, see [docs/common-issues.md](docs/common-issues.md)
 
 ---
 
-## 2. Project-Specific Focus
-- **API Service**: Error handling, input validation, rate limiting
+## Project-Specific Focus
+- **API Service**: Error handling, input validation, rate limiting, request ID tracing
 - **CLI Tool**: Flag parsing, error messages, exit codes
 - **Library**: API stability, documentation, backward compatibility
 - **Microservice**: Service discovery, circuit breakers, observability
@@ -90,7 +100,7 @@ Professional code review skill for Go projects, designed to handle both small ch
 
 ---
 
-## 3. Incremental Review Strategies
+## Incremental Review Strategies
 
 ### Strategy A: By Module
 Core → API → Data → Tests
@@ -105,60 +115,68 @@ Interfaces → Implementations → Consumers → Integration Tests
 
 ---
 
-## 4. Memory-Based Review
+## Memory-Based Review
 
 **Trigger:** 31+ files or 2000+ lines changed
 
-**Location:** `<project-root>/.review/memory.md`
+**Location:** `<project-root>/.review/`
+
+**Memory Files:**
+- **memory-short.md**: Short-term memory for current review cycle
+- **memory-long.md**: Long-term memory for cross-cycle knowledge
 
 **Workflow:**
-1. Check if memory.md exists → restore or create
+1. Check if memory files exist → restore or create
 2. Determine current phase (Security → Quality → Architecture → Testing)
 3. Review batch of 5-10 files
-4. Update memory.md with findings
+4. Update memory files with findings
 5. Repeat until complete, then generate final report
 
 **Details:** [docs/memory-workflow.md](docs/memory-workflow.md)
 
 ---
 
-## 5. Review Output
+## Review Output
 
+### Review Directory Structure
+```
+<project-root>/.review/
+├── memory-short.md      # Short-term memory
+├── memory-long.md       # Long-term memory
+├── review-rules.md      # Project-specific review rules
+├── review-report-*.md   # Review reports
+└── archive/             # Archived review files
+```
+
+### Report Template
 Use template: [templates/review-report.md](templates/review-report.md)
 
-```markdown
-## Code Review Report
+---
 
-### Summary
-- Files changed: X
-- Risk level: High/Medium/Low
-- App Scale: Small/Medium/Large
+## Best Practices
 
-### Critical Issues (Must Fix)
-1. [Security] Description - Location
+### Before Review
+- **Always use askuserquestion** to clarify ambiguous requirements
+- Establish review scope and objectives
+- Set up review environment with proper memory files
 
-### Suggestions (Should Fix)
-1. [Performance] Description - Location
+### During Review
+- Follow project-specific review rules
+- Focus on security, correctness, and performance
+- Document both issues and positive aspects
+- Maintain consistent terminology
 
-### Optimization Recommendations
-1. [High Priority] Description - Expected ROI: XX%
-2. [Medium Priority] Description - Expected ROI: XX%
-3. [Low Priority] Description - Expected ROI: XX%
+### After Review
+- Generate comprehensive review report
+- Update memory files with findings
+- Provide clear action items and priorities
+- Schedule follow-up reviews for critical issues
 
-### Over-Engineering Warnings
-1. [Over-Engineering] Description - Simplified Alternative: XXX
+---
 
-### Implementation Complexity
-1. [Low Complexity] Description - Estimated Effort: X hours
-2. [Medium Complexity] Description - Estimated Effort: X hours
-3. [High Complexity] Description - Estimated Effort: X hours
+## Tool Usage
 
-### Questions for Author
-1. Why was this approach chosen?
-
-### Positive Highlights
-- Good error handling in X
-```
+For detailed tool usage guidelines, see [docs/tool-usage.md](docs/tool-usage.md)
 
 ---
 
@@ -172,3 +190,22 @@ go-code-review/
 ├── tools/             # Built review tool
 └── templates/         # Review templates
 ```
+
+---
+
+## AskUserQuestion Guidelines
+
+**Use askuserquestion when:**
+- Review scope is ambiguous
+- Multiple valid approaches exist
+- Project-specific rules need clarification
+- Security considerations require input
+- Performance trade-offs need decision
+
+**Example questions:**
+- "What is the intended scope of this review?"
+- "Which security aspects should we prioritize?"
+- "Are there any specific performance requirements?"
+- "What's the expected testing strategy for this change?"
+
+**IMPORTANT**: Always ask questions before making assumptions that could impact the review quality.

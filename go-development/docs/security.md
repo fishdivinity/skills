@@ -24,6 +24,20 @@ func (h *Handler) requireAuth(next http.Handler) http.Handler {
 
 - 敏感数据必须加密存储
 - 使用AES-256-GCM等现代加密算法（Modern Encryption Algorithms）
+- 后量子加密：Go 1.26+ 可使用 `crypto/hpke` 实现 RFC 9180 标准的混合公钥加密
+
+```go
+import "crypto/hpke"
+
+func example() {
+    recipient, err := hpke.NewRecipientHPKE(
+        hpke.AEADChaCha20Poly1305,
+        hpke.KDFX963SHA256,
+        hpke.KEMX25519,
+        publicKey,
+    )
+}
+```
 
 ---
 
@@ -38,6 +52,8 @@ srv := &http.Server{
     },
 }
 ```
+
+- Go 1.26+ 默认启用混合后量子密钥交换 `SecP256r1MLKEM768` 和 `SecP384r1MLKEM1024`
 
 ---
 
@@ -56,7 +72,7 @@ srv := &http.Server{
 
 ```go
 // 参数化查询示例
-rows, err := db.QueryContext(ctx, 
+rows, err := db.QueryContext(ctx,
     "SELECT * FROM users WHERE id = $1", userID)
 ```
 
@@ -82,9 +98,25 @@ go func() {
     sigCh := make(chan os.Signal, 1)
     signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
     <-sigCh
-    
+
     ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
     defer cancel()
     srv.Shutdown(ctx)
 }()
+```
+
+---
+
+## 敏感数据处理（实验性）
+
+- Go 1.26+ 可使用 `runtime/secret` 包安全擦除临时敏感数据
+- 启用方式：`GOEXPERIMENT=runtimesecret`
+- 支持架构：amd64 和 arm64 (Linux)
+
+```go
+import "golang.org/x/exp/runtime/secret"
+
+func processSensitiveData(data []byte) {
+    secret.Erase(data)
+}
 ```

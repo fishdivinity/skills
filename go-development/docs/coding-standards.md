@@ -19,9 +19,8 @@ if err != nil {
     return fmt.Errorf("failed to do something: %w", err)
 }
 
-// Go 1.26: 使用 errors.As 进行类型断言（Type Assertion）
-var customErr *CustomError
-if errors.As(err, &customErr) {
+// 使用 errors.AsType（类型安全、更快、更易用）
+if errors.AsType[CustomError](err) {
     // 处理特定错误类型
 }
 
