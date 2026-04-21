@@ -1,7 +1,7 @@
 # Trae 技能仓库
 
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)
-![Skills Count](https://img.shields.io/badge/skills-7-brightgreen.svg)
+![Skills Count](https://img.shields.io/badge/skills-9-brightgreen.svg)
 
 ## 关于本仓库
 
@@ -24,6 +24,8 @@
 | **modern-frontend-development** | 现代前端开发技能 | 生产级前端应用 |
 | **powershell7-style** | PowerShell 7 风格指南 | 命令行操作标准化 |
 | **prototype-design** | 原型设计工具和组件 | UI/UX 设计原型 |
+| **python-development** | Python 开发指南和最佳实践 | Python 项目开发 |
+| **python-machine-learning** | Python 机器学习开发技能 | 机器学习项目开发 |
 
 ## 技能详情
 
@@ -137,6 +139,44 @@ PowerShell 7 风格指南，确保命令行操作的一致性和标准化。
 **目录结构：**
 - `docs/` - 设计问卷和指南
 - `templates/` - 组件、布局和页面模板
+
+</details>
+
+<details>
+<summary><strong>python-development</strong> - Python 开发指南和最佳实践</summary>
+
+Python 3.13+ 开发指南，用于构建生产级（Production-Ready）应用程序。遵循PEP8规范，使用严格模式，注重代码鲁棒性和解耦。
+
+**主要功能：**
+- 编码标准和最佳实践
+- 性能优化
+- 安全实践
+- 环境管理
+
+**目录结构：**
+- `docs/` - 开发指南文档
+- `examples/` - 示例代码
+- `templates/` - 项目结构模板
+- `scripts/` - 脚本工具
+
+</details>
+
+<details>
+<summary><strong>python-machine-learning</strong> - Python 机器学习开发技能</summary>
+
+Python 3.13+ 机器学习开发指南，用于构建生产级（Production-Ready）机器学习应用。专注于OCR、语音识别、模型训练和跨平台部署。
+
+**主要功能：**
+- 模型训练和评估
+- OCR图像识别
+- 语音识别
+- 模型部署和优化
+
+**目录结构：**
+- `docs/` - 机器学习开发指南
+- `examples/` - 示例代码
+- `templates/` - 配置模板
+- `scripts/` - 训练和评估脚本
 
 </details>
 

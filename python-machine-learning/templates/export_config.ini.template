@@ -1,0 +1,7 @@
+[Model]
+model_path = models/model.h5
+
+[Export]
+export_dir = exports
+export_format = tflite  # 可选: tflite, pb, onnx
+quantize = true  # 是否量化模型

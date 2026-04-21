@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高级甘特图 - 任务编排原型</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            csa: {
+              50: '#e6f0ff',
+              100: '#cce0ff',
+              200: '#99c2ff',
+              300: '#66a3ff',
+              400: '#3385ff',
+              500: '#0066cc',
+              600: '#0052a3',
+              700: '#003d7a',
+              800: '#002952',
+              900: '#001429',
+            },
+            csaRed: {
+              400: '#e8384d',
+              500: '#c8102e',
+              600: '#a00d25',
+            },
+            csaGold: {
+              400: '#e0b85c',
+              500: '#d4a843',
+              600: '#b8922e',
+            },
+            neutral: {
+              50: '#fafafa',
+              100: '#f5f5f5',
+              200: '#e5e5e5',
+              300: '#d4d4d4',
+              400: '#a3a3a3',
+              500: '#737373',
+              600: '#525252',
+              700: '#404040',
+              800: '#262626',
+              900: '#171717',
+            },
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+            info: '#3b82f6',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    /* ==================== 甘特图核心样式 ==================== */
+    .gantt-scroll {
+      overflow-x: auto;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .gantt-scroll::-webkit-scrollbar {
+      height: 10px;
+      width: 10px;
+    }
+
+    .gantt-scroll::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 5px;
+    }
+
+    .gantt-scroll::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 5px;
+    }
+
+    /* ==================== 时间头部 ==================== */
+    .time-header {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      background: white;
+    }
+
+    .time-date-row {
+      display: flex;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f8fafc;
+    }
+
+    .time-date-cell {
+      text-align: center;
+      padding: 6px 4px;
+      font-size: 12px;
+      border-right: 1px solid #e5e7eb;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-shrink: 0;
+    }
+
+    .time-hour-row {
+      display: flex;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .time-hour-cell {
+      text-align: center;
+      padding: 4px 2px;
+      font-size: 11px;
+      color: #525252;
+      border-right: 1px solid #e5e7eb;
+      flex-shrink: 0;
+    }
+
+    /* ==================== 固定左侧列 ==================== */
+    .fixed-left-column {
+      position: sticky;
+      left: 0;
+      z-index: 40;
+      background: white;
+      min-width: 380px;
+      width: 380px;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+
+    .fixed-left-column .table-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid #e5e7eb;
+      height: 100%;
+    }
+
+    .fixed-left-column .table-cell:last-child {
+      border-right: none;
+    }
+
+    /* ==================== 甘特图区域 ==================== */
+    .gantt-area {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .gantt-row {
+      border-bottom: 1px solid #e5e7eb;
+      height: 80px;
+      display: flex;
+    }
+
+    .gantt-row:nth-child(even) .fixed-left-column {
+      background: #fafafa;
+    }
+
+    .gantt-row:nth-child(odd) .fixed-left-column {
+      background: #ffffff;
+    }
+
+    /* ==================== 时间网格 ==================== */
+    .time-column-even,
+    .time-grid-even {
+      background-color: #ffffff;
+    }
+
+    .time-column-odd,
+    .time-grid-odd {
+      background-color: #f8fafc;
+    }
+
+    /* ==================== 停场条 ==================== */
+    .parking-bar {
+      background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+      border-radius: 4px;
+      position: absolute;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 10;
+      height: 28px;
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+    }
+
+    .parking-bar:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 2px 8px rgba(0, 48, 135, 0.3);
+    }
+
+    .parking-bar.drag-over {
+      box-shadow: 0 0 0 3px #0066cc, 0 4px 16px rgba(0, 102, 204, 0.4);
+    }
+
+    .parking-bar.has-warning {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      animation: pulse-warning 2s ease-in-out infinite;
+    }
+
+    .parking-bar.has-warning.non-executive {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    @keyframes pulse-warning {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+
+    /* ==================== 航班条 ==================== */
+    .flight-bar {
+      background-color: #d1d5db;
+      border-radius: 3px;
+      position: absolute;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      font-size: 10px;
+      color: #374151;
+      cursor: default;
+      transition: all 0.2s ease;
+      border: 1px solid #9ca3af;
+      z-index: 10;
+    }
+
+    .flight-bar:hover {
+      background-color: #e5e7eb;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .flight-bar.pending {
+      background-color: #e5e7eb;
+      border-color: #9ca3af;
+    }
+
+    /* ==================== 任务块 ==================== */
+    .task-block {
+      position: absolute;
+      height: 18px;
+      border-radius: 3px;
+      cursor: move;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      padding: 0 6px;
+      font-size: 10px;
+      font-weight: 500;
+      color: white;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      z-index: 15;
+    }
+
+    .task-block:hover {
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .task-block.dragging {
+      opacity: 0.7;
+      z-index: 1000;
+    }
+
+    .task-block.task-type-a { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .task-block.task-type-b { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    .task-block.task-type-c { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .task-block.task-type-group { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
+
+    /* ==================== 当前时间线 ==================== */
+    .current-time-line {
+      position: absolute;
+      top: 0;
+      width: 2px;
+      background: #c8102e;
+      z-index: 30;
+      pointer-events: none;
+    }
+
+    .current-time-line::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: -5px;
+      width: 12px;
+      height: 12px;
+      background: #c8102e;
+      border-radius: 50%;
+    }
+
+    .current-time-line::after {
+      content: '当前';
+      position: absolute;
+      top: 4px;
+      left: 8px;
+      font-size: 10px;
+      color: #c8102e;
+      font-weight: 600;
+      white-space: nowrap;
+      background: white;
+      padding: 1px 4px;
+      border-radius: 2px;
+    }
+
+    /* ==================== 任务卡片 ==================== */
+    .task-card {
+      cursor: grab;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .task-card:active {
+      cursor: grabbing;
+    }
+
+    .task-card.dragging {
+      opacity: 0.5;
+      transform: scale(0.98);
+    }
+
+    .task-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.15);
+      border-color: #0066cc;
+    }
+
+    .task-card.return-card {
+      background-color: #FFFBEB;
+      border-left: 4px solid #F59E0B;
+    }
+
+    /* ==================== 放置区域 ==================== */
+    .drop-zone {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    /* ==================== 缩放按钮 ==================== */
+    .zoom-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+      border: 1px solid #e5e7eb;
+      background: white;
+      color: #374151;
+      cursor: pointer;
+    }
+
+    .zoom-btn:hover {
+      background: #f3f4f6;
+    }
+
+    .zoom-btn.active {
+      background: #0066cc;
+      color: white;
+      border-color: #0066cc;
+    }
+
+    /* ==================== 筛选 ==================== */
+    .filter-select {
+      padding: 6px 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 12px;
+      background: white;
+      color: #374151;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .filter-select:focus {
+      border-color: #0066cc;
+    }
+
+    .filter-tab {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      background-color: #f3f4f6;
+      color: #374151;
+      border: 1px solid transparent;
+    }
+
+    .filter-tab:hover {
+      background-color: #e5e7eb;
+    }
+
+    .filter-tab.active {
+      background-color: #0066cc;
+      color: white;
+    }
+
+    .filter-tab .count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+      border-radius: 9px;
+      font-size: 10px;
+      margin-left: 6px;
+      padding: 0 5px;
+    }
+
+    .filter-tab:not(.active) .count {
+      background-color: #d1d5db;
+      color: #1f2937;
+    }
+
+    /* ==================== Toast提示 ==================== */
+    .toast {
+      position: fixed;
+      padding: 12px 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 9999;
+      animation: toastIn 0.3s ease;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toast.success { border-left: 4px solid #10b981; }
+    .toast.error { border-left: 4px solid #ef4444; }
+    .toast.warning { border-left: 4px solid #f59e0b; }
+  </style>
+</head>
+<body class="bg-neutral-100 min-h-screen">
+
+  <div class="h-full flex flex-col">
+    <!-- ==================== 操作栏 ==================== -->
+    <div class="bg-white border-b border-neutral-200 px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <span class="text-sm text-neutral-500">拖拽任务到停场条进行编排</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-4 text-sm">
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" class="w-4 h-4 text-csa-500 rounded focus:ring-csa-500" id="filter-time-exceed">
+              <span class="text-neutral-600">任务时间超出</span>
+              <span class="ml-1 px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs font-medium" id="time-exceed-count">(0)</span>
+            </label>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" class="w-4 h-4 text-csa-500 rounded focus:ring-csa-500" id="filter-non-managed">
+              <span class="text-neutral-600">非执管任务</span>
+              <span class="ml-1 px-2 py-0.5 bg-amber-100 text-amber-600 rounded-full text-xs font-medium" id="non-managed-count">(0)</span>
+            </label>
+          </div>
+        </div>
+        <div class="h-6 w-px bg-neutral-200"></div>
+        <div class="flex items-center gap-2 text-sm text-neutral-600">
+          <span>时间粒度:</span>
+          <div class="flex gap-1">
+            <button class="zoom-btn" data-zoom="minute">分钟</button>
+            <button class="zoom-btn active" data-zoom="hour">小时</button>
+            <button class="zoom-btn" data-zoom="day">天</button>
+          </div>
+        </div>
+        <div class="h-6 w-px bg-neutral-200"></div>
+        <button class="px-4 py-2 bg-csa-500 text-white rounded-lg text-sm font-medium hover:bg-csa-600 transition-colors">
+          <i class="fas fa-save mr-2"></i>保存编排
+        </button>
+        <button class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+          <i class="fas fa-paper-plane mr-2"></i>任务派发
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== 主内容区 ==================== -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- ========== 任务池 ========== -->
+      <div class="w-80 bg-white border-r border-neutral-200 flex flex-col flex-shrink-0">
+        <div class="p-4 border-b border-neutral-200">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-semibold text-neutral-900">待编排任务</h2>
+            <span class="text-xs bg-csa-500 text-white px-2 py-1 rounded-full" id="task-count">3</span>
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <button class="filter-tab active" data-filter="all">
+              全部<span class="count">3</span>
+            </button>
+            <button class="filter-tab" data-filter="return">
+              <i class="fas fa-undo mr-1"></i>退卡<span class="count">0</span>
+            </button>
+          </div>
+          <div class="relative">
+            <input type="text" placeholder="搜索任务..."
+              class="w-full pl-8 pr-3 py-2 border border-neutral-200 rounded-lg text-sm outline-none focus:border-csa-500 transition-colors"
+              id="search-task">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm"></i>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-3 space-y-2" id="task-pool">
+          <div class="task-card bg-white border border-neutral-200 rounded-lg p-3" draggable="true" data-task-id="TASK-001">
+            <div class="flex items-start justify-between mb-2">
+              <span class="text-xs font-medium text-csa-500">TASK-001</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600">待编排</span>
+            </div>
+            <h3 class="font-medium text-neutral-900 text-sm mb-2">发动机定期检修</h3>
+            <div class="flex items-center gap-3 text-xs text-neutral-500">
+              <span><i class="fas fa-plane mr-1"></i>B-8367</span>
+              <span><i class="fas fa-clock mr-1"></i>5h</span>
+            </div>
+          </div>
+
+          <div class="task-card bg-white border border-neutral-200 rounded-lg p-3" draggable="true" data-task-id="TASK-002">
+            <div class="flex items-start justify-between mb-2">
+              <span class="text-xs font-medium text-csa-500">TASK-002</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">紧急</span>
+            </div>
+            <h3 class="font-medium text-neutral-900 text-sm mb-2">起落架故障排除</h3>
+            <div class="flex items-center gap-3 text-xs text-neutral-500">
+              <span><i class="fas fa-plane mr-1"></i>B-8368</span>
+              <span><i class="fas fa-clock mr-1"></i>2h</span>
+            </div>
+          </div>
+
+          <div class="task-card bg-white border border-neutral-200 rounded-lg p-3" draggable="true" data-task-id="TASK-003">
+            <div class="flex items-start justify-between mb-2">
+              <span class="text-xs font-medium text-csa-500">TASK-003</span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">待准备</span>
+            </div>
+            <h3 class="font-medium text-neutral-900 text-sm mb-2">航电系统部件更换</h3>
+            <div class="flex items-center gap-3 text-xs text-neutral-500">
+              <span><i class="fas fa-plane mr-1"></i>B-3092</span>
+              <span><i class="fas fa-clock mr-1"></i>1h</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== 甘特图 ========== -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- 甘特图筛选栏 -->
+        <div class="bg-white border-b border-neutral-200 px-4 py-2 flex items-center gap-4">
+          <span class="text-sm text-neutral-500">筛选:</span>
+          <input type="date" class="filter-select w-32" id="start-date">
+          <span class="text-sm text-neutral-400">至</span>
+          <input type="date" class="filter-select w-32" id="end-date">
+          <div class="h-6 w-px bg-neutral-200"></div>
+          <select class="filter-select" id="gantt-filter-type">
+            <option value="">全部机型</option>
+            <option value="B737">B737</option>
+            <option value="A320">A320</option>
+          </select>
+          <select class="filter-select bg-csa-50 border-csa-200 text-csa-700">
+            <option value="">执管单位</option>
+            <option value="维修部">维修部</option>
+            <option value="技术部">技术部</option>
+          </select>
+        </div>
+
+        <!-- 甘特图主体 -->
+        <div class="gantt-scroll flex-1" id="gantt-container">
+          <div style="min-width: 1800px;">
+            <!-- ==================== 时间头部 ==================== -->
+            <div class="time-header">
+              <div class="flex">
+                <div class="fixed-left-column" style="z-index: 50; background: white;">
+                  <div class="flex h-14">
+                    <div class="table-cell w-10">
+                      <input type="checkbox" class="w-4 h-4 text-csa-500 rounded focus:ring-csa-500">
+                    </div>
+                    <div class="table-cell w-20 font-medium text-sm text-neutral-700">机号</div>
+                    <div class="table-cell flex-1 font-medium text-sm text-neutral-700">维修执管单位</div>
+                    <div class="table-cell w-16 font-medium text-sm text-neutral-700 border-r">机型</div>
+                    <div class="table-cell w-24 font-medium text-sm text-neutral-700">发动机</div>
+                  </div>
+                </div>
+                <div class="flex" id="time-scale"></div>
+              </div>
+              <div class="flex">
+                <div class="fixed-left-column" style="z-index: 45; background: #f8fafc;">
+                  <div class="flex h-7">
+                    <div class="table-cell w-10"></div>
+                    <div class="table-cell w-20 text-xs text-neutral-500 text-center"></div>
+                    <div class="table-cell flex-1 text-xs text-neutral-500 text-center"></div>
+                    <div class="table-cell w-16 text-xs text-neutral-500 border-r text-center"></div>
+                    <div class="table-cell w-24 text-xs text-neutral-500 text-center"></div>
+                  </div>
+                </div>
+                <div class="flex" id="time-scale-hour"></div>
+              </div>
+            </div>
+
+            <!-- ==================== 甘特图身体 ==================== -->
+            <div id="gantt-body" class="relative">
+              <div id="current-time-line" class="current-time-line" style="left: 440px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast容器 -->
+  <div id="toast-container" class="fixed bottom-6 right-6 space-y-2"></div>
+
+  <script>
+    // ==================== 配置 ====================
+    const HOUR_WIDTH = 75;
+    const LEFT_COLUMN_WIDTH = 380;
+    const TOTAL_HOURS = 24;
+
+    // ==================== 数据 ====================
+    const ganttData = {
+      rows: [
+        {
+          id: 'row-1',
+          aircraft: 'B-8367',
+          aircraftType: 'B737-800',
+          unit: '维修部',
+          engine: 'CFM56-7B',
+          parkingBars: [
+            { id: 'AP-001', name: '停场维修', start: 2, duration: 12, deadline: '18:00', manager: '张三', hasWarning: false }
+          ],
+          flights: [
+            { id: 'FL-001', flightNo: 'CZ3101', depTime: '16:00', arrTime: '19:15', depAirport: 'CAN', arrAirport: 'PEK', start: 16, duration: 3.25, pending: true }
+          ]
+        },
+        {
+          id: 'row-2',
+          aircraft: 'B-8368',
+          aircraftType: 'A320-200',
+          unit: '技术部',
+          engine: 'CFM56-5B',
+          parkingBars: [
+            { id: 'AP-002', name: '定检', start: 6, duration: 8, deadline: '20:00', manager: '李四', hasWarning: false }
+          ],
+          flights: [
+            { id: 'FL-002', flightNo: 'CZ3201', depTime: '01:00', arrTime: '04:30', depAirport: 'CAN', arrAirport: 'SHA', start: 1, duration: 3.5, pending: false },
+            { id: 'FL-003', flightNo: 'CZ3202', depTime: '15:00', arrTime: '18:00', depAirport: 'SHA', arrAirport: 'CAN', start: 15, duration: 3, pending: true }
+          ]
+        },
+        {
+          id: 'row-3',
+          aircraft: 'B-3092',
+          aircraftType: 'B737-800',
+          unit: '维修部',
+          engine: 'CFM56-7B',
+          parkingBars: [
+            { id: 'AP-003', name: '换发', start: 0, duration: 10, deadline: '10:00', manager: '王五', hasWarning: true, warningReason: '时间不足' }
+          ],
+          flights: [
+            { id: 'FL-004', flightNo: 'CZ3301', depTime: '11:00', arrTime: '14:00', depAirport: 'CAN', arrAirport: 'PEK', start: 11, duration: 3, pending: true },
+            { id: 'FL-005', flightNo: 'CZ3302', depTime: '18:00', arrTime: '21:00', depAirport: 'PEK', arrAirport: 'CAN', start: 18, duration: 3, pending: true }
+          ]
+        }
+      ]
+    };
+
+    // ==================== 工具函数 ====================
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // ==================== 渲染时间轴 ====================
+    function generateTimeScale() {
+      const dateContainer = document.getElementById('time-scale');
+      const hourContainer = document.getElementById('time-scale-hour');
+
+      let dateHtml = '';
+      let hourHtml = '';
+      let currentDate = null;
+      let dateStartHour = 0;
+      let hoursInDay = 0;
+
+      for (let i = 0; i < TOTAL_HOURS; i++) {
+        const date = new Date();
+        date.setHours(i);
+        const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+
+        if (currentDate !== dateKey) {
+          if (currentDate !== null && hoursInDay > 0) {
+            const width = hoursInDay * HOUR_WIDTH;
+            dateHtml += `<div class="time-date-cell" style="width: ${width}px;">
+              <span class="font-medium text-csa-500">${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}</span>
+            </div>`;
+          }
+          currentDate = dateKey;
+          dateStartHour = i;
+          hoursInDay = 0;
+        }
+        hoursInDay++;
+
+        const isEven = i % 2 === 0;
+        hourHtml += `<div class="time-hour-cell ${isEven ? 'time-column-even' : 'time-column-odd'}" style="width: ${HOUR_WIDTH}px;">
+          <span>${String(i).padStart(2, '0')}:00</span>
+        </div>`;
+      }
+
+      if (hoursInDay > 0) {
+        const width = hoursInDay * HOUR_WIDTH;
+        const date = new Date();
+        date.setHours(dateStartHour);
+        dateHtml += `<div class="time-date-cell" style="width: ${width}px;">
+          <span class="font-medium text-csa-500">${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}</span>
+        </div>`;
+      }
+
+      dateContainer.innerHTML = dateHtml;
+      hourContainer.innerHTML = hourHtml;
+    }
+
+    // ==================== 渲染甘特图身体 ====================
+    function generateGanttBody() {
+      const container = document.getElementById('gantt-body');
+      const totalWidth = TOTAL_HOURS * HOUR_WIDTH;
+      let html = '';
+
+      ganttData.rows.forEach((row, index) => {
+        html += `<div class="gantt-row" data-row-id="${row.id}" style="height: 80px;">
+          <!-- 左侧固定列 -->
+          <div class="fixed-left-column">
+            <div class="flex h-full">
+              <div class="table-cell w-10">
+                <input type="checkbox" class="w-4 h-4 text-csa-500 rounded">
+              </div>
+              <div class="table-cell w-20">
+                <span class="font-semibold text-neutral-900 text-sm">${row.aircraft}</span>
+              </div>
+              <div class="table-cell flex-1">
+                <span class="text-xs text-neutral-600">${row.unit}</span>
+              </div>
+              <div class="table-cell w-16 border-r border-neutral-200">
+                <span class="text-sm text-neutral-700">${row.aircraftType}</span>
+              </div>
+              <div class="table-cell w-24">
+                <span class="text-sm text-neutral-700">${row.engine}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 甘特图区域 -->
+          <div class="gantt-area" style="width: ${totalWidth}px; height: 80px;">
+            <!-- 时间网格 -->
+            ${generateTimeGrid()}
+            <!-- 停场条 -->
+            ${row.parkingBars.map(p => generateParkingBar(p)).join('')}
+            <!-- 航班条 -->
+            ${row.flights.map(f => generateFlightBar(f)).join('')}
+          </div>
+        </div>`;
+      });
+
+      container.innerHTML = html;
+      updateCurrentTimeLine();
+      attachEventListeners();
+    }
+
+    function generateTimeGrid() {
+      let html = '';
+      for (let i = 0; i < TOTAL_HOURS; i++) {
+        const isEven = i % 2 === 0;
+        html += `<div class="absolute top-0 bottom-0 border-r border-neutral-100 ${isEven ? 'time-grid-even' : 'time-grid-odd'}"
+          style="left: ${i * HOUR_WIDTH}px; width: ${HOUR_WIDTH}px;"></div>`;
+      }
+      return html;
+    }
+
+    function generateParkingBar(parking) {
+      const left = parking.start * HOUR_WIDTH;
+      const width = parking.duration * HOUR_WIDTH;
+      const warningClass = parking.hasWarning ? (parking.warningReason === '非执管任务' ? 'non-executive' : '') : '';
+
+      return `<div class="parking-bar ${warningClass}"
+        style="left: ${left}px; width: ${width}px; top: 8px; height: 28px;"
+        data-parking-id="${parking.id}"
+        ondragover="handleDragOver(event)"
+        ondragleave="handleDragLeave(event)"
+        ondrop="handleDrop(event)">
+        <span class="text-white text-xs font-medium truncate">${parking.name} ${parking.deadline} ${parking.manager}</span>
+        ${parking.hasWarning ? `<i class="fas fa-exclamation text-white text-xs ml-2"></i>` : ''}
+        <div class="drop-zone"></div>
+      </div>`;
+    }
+
+    function generateFlightBar(flight) {
+      const left = flight.start * HOUR_WIDTH;
+      const width = flight.duration * HOUR_WIDTH;
+      const pendingClass = flight.pending ? 'pending' : '';
+
+      return `<div class="flight-bar ${pendingClass}"
+        style="left: ${left}px; width: ${width}px; top: 42px; height: 18px;">
+        <span class="font-medium">${flight.depTime}</span>
+        <span class="font-medium text-center">${flight.flightNo}</span>
+        <span class="font-medium">${flight.arrTime}</span>
+      </div>`;
+    }
+
+    // ==================== 当前时间线 ====================
+    function updateCurrentTimeLine() {
+      const line = document.getElementById('current-time-line');
+      const now = new Date();
+      const hoursSinceStart = now.getHours() + now.getMinutes() / 60;
+      const leftPosition = hoursSinceStart * HOUR_WIDTH;
+
+      line.style.left = (LEFT_COLUMN_WIDTH + leftPosition) + 'px';
+
+      const container = document.getElementById('gantt-body');
+      line.style.height = container.offsetHeight + 'px';
+    }
+
+    // ==================== 事件处理 ====================
+    function attachEventListeners() {
+      // 任务卡片拖拽
+      document.querySelectorAll('.task-card').forEach(card => {
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragend', handleDragEnd);
+      });
+    }
+
+    let draggedTask = null;
+
+    function handleDragStart(e) {
+      draggedTask = {
+        id: this.dataset.taskId,
+        name: this.querySelector('h3').textContent
+      };
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', JSON.stringify(draggedTask));
+    }
+
+    function handleDragEnd(e) {
+      this.classList.remove('dragging');
+      draggedTask = null;
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      this.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+
+      const taskData = JSON.parse(e.dataTransfer.getData('text/plain'));
+      const parkingId = this.dataset.parkingId;
+
+      showToast(`任务 "${taskData.name}" 已放置到 ${parkingId}`, 'success');
+    }
+
+    // 缩放按钮
+    document.querySelectorAll('.zoom-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.zoom-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Tab筛选
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // ==================== 初始化 ====================
+    function init() {
+      generateTimeScale();
+      generateGanttBody();
+
+      const today = new Date();
+      document.getElementById('start-date').valueAsDate = today;
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      document.getElementById('end-date').valueAsDate = tomorrow;
+
+      setInterval(updateCurrentTimeLine, 60000);
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>筛选系统模式库 - 原型组件</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            csa: {
+              50: '#e6f0ff',
+              100: '#cce0ff',
+              200: '#99c2ff',
+              300: '#66a3ff',
+              400: '#3385ff',
+              500: '#0066cc',
+              600: '#0052a3',
+              700: '#003d7a',
+              800: '#002952',
+              900: '#001429',
+            },
+            csaRed: {
+              400: '#e8384d',
+              500: '#c8102e',
+              600: '#a00d25',
+            },
+            csaGold: {
+              400: '#e0b85c',
+              500: '#d4a843',
+              600: '#b8922e',
+            },
+            neutral: {
+              50: '#fafafa',
+              100: '#f5f5f5',
+              200: '#e5e5e5',
+              300: '#d4d4d4',
+              400: '#a3a3a3',
+              500: '#737373',
+              600: '#525252',
+              700: '#404040',
+              800: '#262626',
+              900: '#171717',
+            },
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+            info: '#3b82f6',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    /* ==================== 筛选Tab ==================== */
+    .filter-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #737373;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .filter-tab:hover {
+      background: #f5f5f5;
+      color: #404040;
+    }
+
+    .filter-tab.active {
+      background: #0066cc;
+      color: white;
+    }
+
+    .filter-tab .count {
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.2);
+    }
+
+    .filter-tab:not(.active) .count {
+      background: #e5e5e5;
+      color: #737373;
+    }
+
+    /* ==================== 筛选下拉 ==================== */
+    .filter-select {
+      padding: 6px 12px;
+      padding-right: 32px;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #525252;
+      background: white;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23737373' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+    }
+
+    .filter-select:hover {
+      border-color: #d4d4d4;
+    }
+
+    .filter-select:focus {
+      border-color: #0066cc;
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+
+    .filter-select.has-value {
+      background-color: #f0f9ff;
+      border-color: #0066cc;
+      color: #0066cc;
+    }
+
+    /* ==================== 筛选输入框 ==================== */
+    .filter-input {
+      padding: 6px 12px;
+      padding-left: 32px;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #171717;
+      background: white;
+      outline: none;
+      transition: all 0.2s ease;
+      width: 180px;
+    }
+
+    .filter-input:focus {
+      border-color: #0066cc;
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+
+    .filter-input-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .filter-input-wrapper .icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #a3a3a3;
+      font-size: 12px;
+    }
+
+    .filter-input-wrapper.has-value .icon {
+      color: #0066cc;
+    }
+
+    /* ==================== 筛选按钮 ==================== */
+    .filter-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #525252;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover {
+      background: #f5f5f5;
+      border-color: #d4d4d4;
+    }
+
+    .filter-btn.active {
+      background: #0066cc;
+      border-color: #0066cc;
+      color: white;
+    }
+
+    .filter-btn.primary {
+      background: #0066cc;
+      border-color: #0066cc;
+      color: white;
+    }
+
+    .filter-btn.primary:hover {
+      background: #0052a3;
+    }
+
+    /* ==================== 日期范围选择 ==================== */
+    .date-range-input {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .date-input {
+      padding: 6px 12px;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #171717;
+      background: white;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .date-input:focus {
+      border-color: #0066cc;
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+
+    .date-separator {
+      color: #a3a3a3;
+      font-size: 12px;
+    }
+
+    /* ==================== 多选标签 ==================== */
+    .filter-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: #f5f5f5;
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      font-size: 12px;
+      color: #525252;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-tag:hover {
+      background: #e5e5e5;
+    }
+
+    .filter-tag.selected {
+      background: #0066cc;
+      border-color: #0066cc;
+      color: white;
+    }
+
+    .filter-tag .remove {
+      width: 14px;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      font-size: 10px;
+    }
+
+    .filter-tag:not(.selected) .remove {
+      background: #d4d4d4;
+    }
+
+    /* ==================== 计数徽章 ==================== */
+    .count-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .count-badge.default {
+      background: #f5f5f5;
+      color: #737373;
+    }
+
+    .count-badge.danger {
+      background: #fee2e2;
+      color: #ef4444;
+    }
+
+    .count-badge.warning {
+      background: #fef3c7;
+      color: #f59e0b;
+    }
+
+    .count-badge.success {
+      background: #dcfce7;
+      color: #10b981;
+    }
+
+    .count-badge.info {
+      background: #dbeafe;
+      color: #3b82f6;
+    }
+
+    /* ==================== 筛选状态栏 ==================== */
+    .filter-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #0369a1;
+    }
+
+    .filter-status-bar {
+      padding: 12px 16px;
+      background: #fafafa;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .filter-status-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #525252;
+    }
+
+    .filter-status-item .remove {
+      color: #a3a3a3;
+      cursor: pointer;
+    }
+
+    .filter-status-item .remove:hover {
+      color: #ef4444;
+    }
+
+    /* ==================== 高级筛选面板 ==================== */
+    .filter-panel {
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+
+    .filter-panel-section {
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .filter-panel-section:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+      margin-bottom: 0;
+    }
+
+    .filter-panel-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #737373;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body class="bg-neutral-100 min-h-screen p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-neutral-900 mb-2">筛选系统模式库</h1>
+    <p class="text-neutral-600 mb-8">支持Tab筛选、下拉筛选、搜索、多选标签、日期范围等场景</p>
+
+    <!-- ==================== 示例1：Tab + 下拉 + 搜索 组合筛选 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例1：任务池Tab组合筛选</h2>
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <button class="filter-tab active" data-filter="all">
+              全部
+              <span class="count">16</span>
+            </button>
+            <button class="filter-tab" data-filter="return">
+              <i class="fas fa-undo"></i>
+              退卡
+              <span class="count">2</span>
+            </button>
+            <button class="filter-tab" data-filter="urgent">
+              <i class="fas fa-exclamation-circle"></i>
+              紧急
+              <span class="count">3</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="filter-btn primary">
+              <i class="fas fa-box"></i>
+              组虚拟包
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="filter-input-wrapper">
+            <i class="fas fa-search icon"></i>
+            <input type="text" class="filter-input" placeholder="搜索任务号、名称..." id="search-task">
+          </div>
+          <select class="filter-select" id="filter-aircraft">
+            <option value="">全部机号</option>
+            <option value="B-8367">B-8367</option>
+            <option value="B-8368">B-8368</option>
+            <option value="B-3092">B-3092</option>
+          </select>
+          <select class="filter-select" id="filter-priority">
+            <option value="">全部优先级</option>
+            <option value="高">高</option>
+            <option value="中">中</option>
+            <option value="低">低</option>
+          </select>
+          <select class="filter-select" id="filter-status">
+            <option value="">全部状态</option>
+            <option value="pending">待编排</option>
+            <option value="arranged">已编排</option>
+            <option value="inprogress">进行中</option>
+          </select>
+          <button class="filter-btn">
+            <i class="fas fa-filter"></i>
+            更多筛选
+          </button>
+        </div>
+
+        <div class="flex items-center gap-4 text-sm text-neutral-600">
+          <span>已选择 <span class="font-medium text-neutral-900">0</span> 项</span>
+          <button class="text-csa-500 hover:text-csa-600 disabled:opacity-50" disabled>清除选择</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 示例2：甘特图筛选栏 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例2：甘特图筛选栏</h2>
+      <div class="flex items-center gap-4 flex-wrap">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-neutral-500">筛选:</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-neutral-500">时间段:</span>
+          <input type="date" class="date-input" id="start-date" value="2024-03-20">
+          <span class="date-separator">至</span>
+          <input type="date" class="date-input" id="end-date" value="2024-03-21">
+        </div>
+        <div class="h-6 w-px bg-neutral-200"></div>
+        <div class="filter-input-wrapper">
+          <i class="fas fa-search icon"></i>
+          <input type="text" class="filter-input" placeholder="搜索机号..." id="gantt-search">
+        </div>
+        <select class="filter-select" id="gantt-filter-type">
+          <option value="">全部机型</option>
+          <option value="B737">B737</option>
+          <option value="A320">A320</option>
+        </select>
+        <select class="filter-select" id="gantt-filter-unit" style="background-color: #E8F0FF; border-color: #9BBFFF; color: #00205D;">
+          <option value="">执管单位</option>
+          <option value="维修部">维修部</option>
+          <option value="技术部">技术部</option>
+        </select>
+        <div class="h-6 w-px bg-neutral-200"></div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" class="w-4 h-4 text-csa-500 rounded" id="filter-time-exceed">
+          <span class="text-sm text-neutral-600">任务时间超出</span>
+          <span class="count-badge danger" id="time-exceed-count">0</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" class="w-4 h-4 text-csa-500 rounded" id="filter-non-managed">
+          <span class="text-sm text-neutral-600">非执管任务</span>
+          <span class="count-badge warning" id="non-managed-count">0</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- ==================== 示例3：带导航的筛选 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例3：带导航的筛选</h2>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" class="w-4 h-4 text-csa-500 rounded" id="filter-warning">
+            <span class="text-sm text-neutral-600">任务时间超出</span>
+            <span class="count-badge danger" id="warning-count">3</span>
+          </label>
+          <div class="flex items-center gap-1 ml-2" id="warning-nav">
+            <button class="w-6 h-6 flex items-center justify-center rounded border border-neutral-200 text-neutral-600 hover:bg-neutral-100">
+              <i class="fas fa-chevron-left text-xs"></i>
+            </button>
+            <span class="text-xs text-neutral-500 px-2">1/3</span>
+            <button class="w-6 h-6 flex items-center justify-center rounded border border-neutral-200 text-neutral-600 hover:bg-neutral-100">
+              <i class="fas fa-chevron-right text-xs"></i>
+            </button>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 text-sm">
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" class="w-4 h-4 text-csa-500 rounded" id="filter-non-managed-2">
+              <span class="text-neutral-600">非执管任务</span>
+              <span class="count-badge warning" id="non-managed-count-2">5</span>
+            </label>
+            <div class="flex items-center gap-1 ml-2" id="non-managed-nav">
+              <button class="w-6 h-6 flex items-center justify-center rounded border border-neutral-200 text-neutral-600 hover:bg-neutral-100">
+                <i class="fas fa-chevron-left text-xs"></i>
+              </button>
+              <span class="text-xs text-neutral-500 px-2">1/5</span>
+              <button class="w-6 h-6 flex items-center justify-center rounded border border-neutral-200 text-neutral-600 hover:bg-neutral-100">
+                <i class="fas fa-chevron-right text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 示例4：多选标签筛选 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例4：多选标签筛选</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">执管单位</label>
+          <div class="filter-tags" id="unit-tags">
+            <span class="filter-tag selected" data-value="维修部">
+              维修部
+              <span class="remove"><i class="fas fa-times"></i></span>
+            </span>
+            <span class="filter-tag selected" data-value="技术部">
+              技术部
+              <span class="remove"><i class="fas fa-times"></i></span>
+            </span>
+            <span class="filter-tag" data-value="航电部">
+              航电部
+              <span class="remove"><i class="fas fa-times"></i></span>
+            </span>
+            <span class="filter-tag" data-value="结构部">
+              结构部
+              <span class="remove"><i class="fas fa-times"></i></span>
+            </span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">机型</label>
+          <div class="filter-tags" id="aircraft-tags">
+            <span class="filter-tag selected" data-value="B737">
+              B737
+              <span class="remove"><i class="fas fa-times"></i></span>
+            </span>
+            <span class="filter-tag" data-value="A320">
+              A320
+              <span class="remove"><i class="fas fa-times"></i></span>
+            </span>
+            <span class="filter-tag" data-value="B737-MAX">
+              B737-MAX
+              <span class="remove"><i class="fas fa-times"></i></span>
+            </span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-neutral-700 mb-2">状态</label>
+          <div class="filter-tags" id="status-tags">
+            <span class="filter-tag" data-value="待准备">
+              <span class="w-2 h-2 rounded-full bg-neutral-400 mr-1"></span>
+              待准备
+            </span>
+            <span class="filter-tag selected" data-value="待编排">
+              <span class="w-2 h-2 rounded-full bg-blue-500 mr-1"></span>
+              待编排
+            </span>
+            <span class="filter-tag selected" data-value="进行中">
+              <span class="w-2 h-2 rounded-full bg-amber-500 mr-1"></span>
+              进行中
+            </span>
+            <span class="filter-tag" data-value="已完成">
+              <span class="w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+              已完成
+            </span>
+            <span class="filter-tag" data-value="已逾期">
+              <span class="w-2 h-2 rounded-full bg-red-500 mr-1"></span>
+              已逾期
+            </span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 pt-2">
+          <button class="px-4 py-2 bg-csa-500 text-white rounded-lg text-sm font-medium hover:bg-csa-600 transition-colors">
+            应用筛选
+          </button>
+          <button class="px-4 py-2 border border-neutral-300 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50 transition-colors">
+            重置
+          </button>
+          <span class="text-sm text-neutral-500 ml-auto">已筛选出 <span class="font-medium text-csa-500">12</span> 条结果</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 示例5：筛选状态栏 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例5：筛选状态栏</h2>
+      <div class="filter-status-bar flex items-center gap-3 flex-wrap">
+        <span class="text-sm text-neutral-500">当前筛选:</span>
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="filter-status-item">
+            <span>执管单位: 维修部</span>
+            <span class="remove"><i class="fas fa-times"></i></span>
+          </div>
+          <div class="filter-status-item">
+            <span>机型: B737</span>
+            <span class="remove"><i class="fas fa-times"></i></span>
+          </div>
+          <div class="filter-status-item">
+            <span>时间范围: 2024-03-20 至 2024-03-25</span>
+            <span class="remove"><i class="fas fa-times"></i></span>
+          </div>
+        </div>
+        <button class="text-sm text-csa-500 hover:text-csa-600 ml-auto">
+          清除所有筛选
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== 示例6：高级筛选面板 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例6：高级筛选面板</h2>
+      <div class="filter-panel" style="max-width: 600px;">
+        <div class="filter-panel-section">
+          <div class="filter-panel-title">基本信息</div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-neutral-500 mb-1">任务状态</label>
+              <select class="filter-select w-full">
+                <option value="">全部</option>
+                <option>待准备</option>
+                <option>待编排</option>
+                <option>进行中</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-neutral-500 mb-1">优先级</label>
+              <select class="filter-select w-full">
+                <option value="">全部</option>
+                <option>高</option>
+                <option>中</option>
+                <option>低</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="filter-panel-section">
+          <div class="filter-panel-title">时间范围</div>
+          <div class="date-range-input">
+            <input type="date" class="date-input" placeholder="开始日期">
+            <span class="date-separator">至</span>
+            <input type="date" class="date-input" placeholder="结束日期">
+          </div>
+        </div>
+        <div class="filter-panel-section">
+          <div class="filter-panel-title">执管单位</div>
+          <div class="filter-tags">
+            <span class="filter-tag selected" data-value="维修部">维修部</span>
+            <span class="filter-tag selected" data-value="技术部">技术部</span>
+            <span class="filter-tag" data-value="航电部">航电部</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button class="px-4 py-2 border border-neutral-300 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50">重置</button>
+          <button class="px-4 py-2 bg-csa-500 text-white rounded-lg text-sm font-medium hover:bg-csa-600">应用</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ==================== Tab筛选 ====================
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        const group = this.closest('.flex').querySelectorAll('.filter-tab');
+        group.forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // ==================== 下拉筛选 ====================
+    document.querySelectorAll('.filter-select').forEach(select => {
+      select.addEventListener('change', function() {
+        if (this.value) {
+          this.classList.add('has-value');
+        } else {
+          this.classList.remove('has-value');
+        }
+      });
+    });
+
+    // ==================== 搜索输入 ====================
+    document.querySelectorAll('.filter-input').forEach(input => {
+      const wrapper = input.closest('.filter-input-wrapper');
+      input.addEventListener('input', function() {
+        if (this.value) {
+          wrapper.classList.add('has-value');
+        } else {
+          wrapper.classList.remove('has-value');
+        }
+      });
+    });
+
+    // ==================== 多选标签 ====================
+    document.querySelectorAll('.filter-tag').forEach(tag => {
+      tag.addEventListener('click', function() {
+        this.classList.toggle('selected');
+      });
+    });
+
+    // ==================== 筛选状态栏移除 ====================
+    document.querySelectorAll('.filter-status-item .remove').forEach(btn => {
+      btn.addEventListener('click', function() {
+        this.closest('.filter-status-item').remove();
+      });
+    });
+
+    // ==================== 计数徽章更新示例 ====================
+    function updateCounts() {
+      const warningCount = Math.floor(Math.random() * 5);
+      const nonManagedCount = Math.floor(Math.random() * 8);
+
+      const warningBadge = document.getElementById('time-exceed-count') || document.getElementById('warning-count');
+      const nonManagedBadge = document.getElementById('non-managed-count') || document.getElementById('non-managed-count-2');
+
+      if (warningBadge) warningBadge.textContent = warningCount;
+      if (nonManagedBadge) nonManagedBadge.textContent = nonManagedCount;
+    }
+
+    setInterval(updateCounts, 5000);
+
+    console.log('筛选系统模式库已加载');
+  </script>
+</body>
+</html>

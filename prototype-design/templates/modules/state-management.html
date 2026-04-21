@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>状态管理模式 - 原型组件</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            csa: { 50: '#e6f2ff', 100: '#cce5ff', 200: '#99cbff', 300: '#66b1ff', 400: '#3397ff', 500: '#0066cc', 600: '#0052a3', 700: '#003d7a', 800: '#002952', 900: '#001429' },
+            csaRed: { 400: '#e8384d', 500: '#c8102e', 600: '#a00d25' },
+            csaGold: { 400: '#e0b85c', 500: '#d4a843', 600: '#b8922e' },
+            neutral: { 50: '#fafafa', 100: '#f5f5f5', 200: '#e5e5e5', 300: '#d4d4d4', 400: '#a3a3a3', 500: '#737373', 600: '#525252', 700: '#404040', 800: '#262626', 900: '#171717' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    /* ==================== 状态徽章 ==================== */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-badge.pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-badge.active, .status-badge.inprogress {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .status-badge.completed {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-badge.error, .status-badge.overdue {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-badge.draft {
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    /* ==================== 优先级徽章 ==================== */
+    .priority-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .priority-badge.high {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .priority-badge.medium {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .priority-badge.low {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    /* ==================== 动态列表 ==================== */
+    .dynamic-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .dynamic-list-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .dynamic-list-item:hover {
+      border-color: #0066cc;
+      box-shadow: 0 2px 8px rgba(0, 102, 204, 0.1);
+    }
+
+    .dynamic-list-item.selected {
+      border-color: #0066cc;
+      background: #f0f9ff;
+    }
+
+    .dynamic-list-item.removing {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    .dynamic-list-item.adding {
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ==================== 计数器 ==================== */
+    .counter {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .counter-btn {
+      width: 28px;
+      height: 28px;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: #525252;
+    }
+
+    .counter-btn:hover {
+      background: #f5f5f5;
+      border-color: #d4d4d4;
+    }
+
+    .counter-btn:active {
+      background: #e5e5e5;
+    }
+
+    .counter-value {
+      min-width: 40px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #171717;
+    }
+
+    /* ==================== 切换开关 ==================== */
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: #e5e5e5;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .toggle.active {
+      background: #0066cc;
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease;
+    }
+
+    .toggle.active::after {
+      left: 22px;
+    }
+
+    /* ==================== 加载状态 ==================== */
+    .loading-spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #e5e5e5;
+      border-top-color: #0066cc;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, #f5f5f5 25%, #e5e5e5 50%, #f5f5f5 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+    }
+
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ==================== 空状态 ==================== */
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    .empty-state-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      background: #f5f5f5;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a3a3a3;
+      font-size: 24px;
+    }
+
+    /* ==================== Toast 通知 ==================== */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      padding: 12px 16px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastIn 0.3s ease;
+      min-width: 280px;
+    }
+
+    .toast.removing {
+      animation: toastOut 0.3s ease forwards;
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes toastOut {
+      to {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+    }
+
+    .toast-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .toast.success .toast-icon { background: #dcfce7; color: #10b981; }
+    .toast.error .toast-icon { background: #fee2e2; color: #ef4444; }
+    .toast.warning .toast-icon { background: #fef3c7; color: #f59e0b; }
+    .toast.info .toast-icon { background: #dbeafe; color: #3b82f6; }
+
+    .toast-message {
+      flex: 1;
+      font-size: 14px;
+      color: #171717;
+    }
+  </style>
+</head>
+<body class="bg-neutral-100 min-h-screen p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-neutral-900 mb-2">状态管理模式</h1>
+    <p class="text-neutral-600 mb-8">支持列表渲染、状态更新、计数器、Toast通知等响应式交互</p>
+
+    <!-- ==================== 示例1：动态任务列表 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例1：动态任务列表</h2>
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-4">
+          <span class="text-sm text-neutral-600">任务总数: <span class="font-semibold text-neutral-900" id="task-total">4</span></span>
+          <span class="text-sm text-green-600">已完成: <span class="font-semibold" id="task-completed">1</span></span>
+          <span class="text-sm text-amber-600">进行中: <span class="font-semibold" id="task-inprogress">2</span></span>
+          <span class="text-sm text-neutral-500">待处理: <span class="font-semibold" id="task-pending">1</span></span>
+        </div>
+        <button id="add-task-btn" class="px-4 py-2 bg-csa-500 text-white rounded-lg text-sm font-medium hover:bg-csa-600 transition-colors">
+          <i class="fas fa-plus mr-2"></i>添加任务
+        </button>
+      </div>
+
+      <div class="dynamic-list" id="task-list">
+        <div class="dynamic-list-item" data-id="1">
+          <input type="checkbox" class="w-4 h-4 text-csa-500 rounded task-checkbox">
+          <div class="flex-1">
+            <div class="font-medium text-neutral-900">发动机定期检修</div>
+            <div class="text-xs text-neutral-500 mt-1">TASK-001 · B-8367</div>
+          </div>
+          <span class="status-badge inprogress">进行中</span>
+          <span class="priority-badge high"><i class="fas fa-arrow-up"></i>高</span>
+          <button class="text-neutral-400 hover:text-red-500 delete-btn"><i class="fas fa-trash"></i></button>
+        </div>
+
+        <div class="dynamic-list-item" data-id="2">
+          <input type="checkbox" class="w-4 h-4 text-csa-500 rounded task-checkbox" checked>
+          <div class="flex-1">
+            <div class="font-medium text-neutral-900 line-through">起落架故障排除</div>
+            <div class="text-xs text-neutral-500 mt-1">TASK-002 · B-8368</div>
+          </div>
+          <span class="status-badge completed">已完成</span>
+          <span class="priority-badge high"><i class="fas fa-arrow-up"></i>高</span>
+          <button class="text-neutral-400 hover:text-red-500 delete-btn"><i class="fas fa-trash"></i></button>
+        </div>
+
+        <div class="dynamic-list-item" data-id="3">
+          <input type="checkbox" class="w-4 h-4 text-csa-500 rounded task-checkbox">
+          <div class="flex-1">
+            <div class="font-medium text-neutral-900">航电系统部件更换</div>
+            <div class="text-xs text-neutral-500 mt-1">TASK-003 · B-3092</div>
+          </div>
+          <span class="status-badge pending">待编排</span>
+          <span class="priority-badge medium"><i class="fas fa-minus"></i>中</span>
+          <button class="text-neutral-400 hover:text-red-500 delete-btn"><i class="fas fa-trash"></i></button>
+        </div>
+
+        <div class="dynamic-list-item" data-id="4">
+          <input type="checkbox" class="w-4 h-4 text-csa-500 rounded task-checkbox">
+          <div class="flex-1">
+            <div class="font-medium text-neutral-900">液压系统检测</div>
+            <div class="text-xs text-neutral-500 mt-1">TASK-004 · B-5721</div>
+          </div>
+          <span class="status-badge inprogress">进行中</span>
+          <span class="priority-badge low"><i class="fas fa-arrow-down"></i>低</span>
+          <button class="text-neutral-400 hover:text-red-500 delete-btn"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+
+      <div class="empty-state hidden" id="empty-state">
+        <div class="empty-state-icon">
+          <i class="fas fa-inbox"></i>
+        </div>
+        <h3 class="text-lg font-medium text-neutral-900 mb-1">暂无任务</h3>
+        <p class="text-sm text-neutral-500">点击上方按钮添加新任务</p>
+      </div>
+    </section>
+
+    <!-- ==================== 示例2：计数器组件 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例2：计数器组件</h2>
+      <div class="flex items-center gap-8">
+        <div class="flex items-center gap-4">
+          <span class="text-sm text-neutral-600">选择数量:</span>
+          <div class="counter">
+            <button class="counter-btn" id="counter-dec"><i class="fas fa-minus"></i></button>
+            <span class="counter-value" id="counter-value">0</span>
+            <button class="counter-btn" id="counter-inc"><i class="fas fa-plus"></i></button>
+          </div>
+          <span class="text-sm text-neutral-500">最大值: 10</span>
+        </div>
+
+        <div class="h-8 w-px bg-neutral-200"></div>
+
+        <div class="flex items-center gap-4">
+          <span class="text-sm text-neutral-600">缩放级别:</span>
+          <div class="counter">
+            <button class="counter-btn" id="zoom-dec"><i class="fas fa-search-minus"></i></button>
+            <span class="counter-value" id="zoom-value">50%</span>
+            <button class="counter-btn" id="zoom-inc"><i class="fas fa-search-plus"></i></button>
+          </div>
+          <span class="text-sm text-neutral-500">范围: 25% - 200%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 示例3：开关切换 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例3：开关切换</h2>
+      <div class="grid grid-cols-2 gap-6">
+        <div class="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
+          <div>
+            <div class="font-medium text-neutral-900">显示时间超出任务</div>
+            <div class="text-xs text-neutral-500 mt-1">高亮显示超过预定时间的任务</div>
+          </div>
+          <div class="toggle active" id="toggle-warning" data-state="true"></div>
+        </div>
+
+        <div class="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
+          <div>
+            <div class="font-medium text-neutral-900">自动刷新</div>
+            <div class="text-xs text-neutral-500 mt-1">每分钟自动刷新任务状态</div>
+          </div>
+          <div class="toggle" id="toggle-auto" data-state="false"></div>
+        </div>
+
+        <div class="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
+          <div>
+            <div class="font-medium text-neutral-900">显示航班信息</div>
+            <div class="text-xs text-neutral-500 mt-1">在甘特图上显示航班条</div>
+          </div>
+          <div class="toggle active" id="toggle-flight" data-state="true"></div>
+        </div>
+
+        <div class="flex items-center justify-between p-4 bg-neutral-50 rounded-lg">
+          <div>
+            <div class="font-medium text-neutral-900">启用拖拽编排</div>
+            <div class="text-xs text-neutral-500 mt-1">允许拖拽任务到甘特图</div>
+          </div>
+          <div class="toggle active" id="toggle-drag" data-state="true"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 示例4：加载与空状态 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例4：加载与空状态</h2>
+      <div class="grid grid-cols-2 gap-6">
+        <div>
+          <h3 class="text-sm font-medium text-neutral-700 mb-3">加载状态</h3>
+          <div class="space-y-3" id="loading-demo">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg skeleton"></div>
+              <div class="flex-1">
+                <div class="h-4 skeleton rounded w-3/4 mb-2"></div>
+                <div class="h-3 skeleton rounded w-1/2"></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg skeleton"></div>
+              <div class="flex-1">
+                <div class="h-4 skeleton rounded w-2/3 mb-2"></div>
+                <div class="h-3 skeleton rounded w-1/3"></div>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg skeleton"></div>
+              <div class="flex-1">
+                <div class="h-4 skeleton rounded w-4/5 mb-2"></div>
+                <div class="h-3 skeleton rounded w-2/5"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium text-neutral-700 mb-3">空状态</h3>
+          <div class="empty-state border-2 border-dashed border-neutral-200 rounded-lg" id="empty-demo">
+            <div class="empty-state-icon">
+              <i class="fas fa-tasks"></i>
+            </div>
+            <h3 class="text-base font-medium text-neutral-900 mb-1">暂无数据</h3>
+            <p class="text-sm text-neutral-500">请稍后再试或联系管理员</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 示例5：状态徽章 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例5：状态徽章</h2>
+      <div class="flex flex-wrap gap-4">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-neutral-600">状态:</span>
+          <span class="status-badge pending">待准备</span>
+          <span class="status-badge active">待编排</span>
+          <span class="status-badge inprogress">进行中</span>
+          <span class="status-badge completed">已完成</span>
+          <span class="status-badge error">已逾期</span>
+          <span class="status-badge draft">草稿</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-neutral-600">优先级:</span>
+          <span class="priority-badge high"><i class="fas fa-arrow-up"></i>高</span>
+          <span class="priority-badge medium"><i class="fas fa-minus"></i>中</span>
+          <span class="priority-badge low"><i class="fas fa-arrow-down"></i>低</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ==================== Toast 容器 ==================== -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    // ==================== 简单状态管理 ====================
+    const Store = {
+      state: {
+        tasks: [],
+        counter: 0,
+        zoom: 50,
+        toggles: {
+          warning: true,
+          autoRefresh: false,
+          flight: true,
+          drag: true
+        }
+      },
+      listeners: [],
+
+      subscribe(listener) {
+        this.listeners.push(listener);
+      },
+
+      notify() {
+        this.listeners.forEach(listener => listener(this.state));
+      },
+
+      setState(newState) {
+        this.state = { ...this.state, ...newState };
+        this.notify();
+      },
+
+      addTask(task) {
+        const newTask = { ...task, id: Date.now() };
+        this.state.tasks.push(newTask);
+        this.notify();
+        showToast(`任务 "${task.name}" 已添加`, 'success');
+      },
+
+      removeTask(id) {
+        this.state.tasks = this.state.tasks.filter(t => t.id !== id);
+        this.notify();
+        showToast('任务已删除', 'info');
+      },
+
+      toggleTask(id) {
+        const task = this.state.tasks.find(t => t.id === id);
+        if (task) {
+          task.completed = !task.completed;
+          this.notify();
+        }
+      }
+    };
+
+    // ==================== Toast 通知 ====================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+
+      const icons = {
+        success: 'fa-check',
+        error: 'fa-times',
+        warning: 'fa-exclamation',
+        info: 'fa-info'
+      };
+
+      toast.innerHTML = `
+        <div class="toast-icon">
+          <i class="fas ${icons[type]}"></i>
+        </div>
+        <span class="toast-message">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // ==================== 任务列表操作 ====================
+    let taskIdCounter = 5;
+
+    document.getElementById('add-task-btn').addEventListener('click', function() {
+      const newTask = {
+        id: taskIdCounter++,
+        name: '新任务 ' + taskIdCounter,
+        code: 'TASK-' + String(taskIdCounter).padStart(3, '0'),
+        aircraft: 'B-' + (8000 + taskIdCounter),
+        status: 'pending',
+        priority: 'medium',
+        completed: false
+      };
+
+      const list = document.getElementById('task-list');
+      const emptyState = document.getElementById('empty-state');
+
+      emptyState.classList.add('hidden');
+
+      const item = document.createElement('div');
+      item.className = 'dynamic-list-item adding';
+      item.dataset.id = newTask.id;
+      item.innerHTML = `
+        <input type="checkbox" class="w-4 h-4 text-csa-500 rounded task-checkbox">
+        <div class="flex-1">
+          <div class="font-medium text-neutral-900">${newTask.name}</div>
+          <div class="text-xs text-neutral-500 mt-1">${newTask.code} · ${newTask.aircraft}</div>
+        </div>
+        <span class="status-badge pending">待编排</span>
+        <span class="priority-badge medium"><i class="fas fa-minus"></i>中</span>
+        <button class="text-neutral-400 hover:text-red-500 delete-btn"><i class="fas fa-trash"></i></button>
+      `;
+
+      list.appendChild(item);
+
+      setTimeout(() => item.classList.remove('adding'), 300);
+
+      item.querySelector('.delete-btn').addEventListener('click', function() {
+        item.classList.add('removing');
+        setTimeout(() => {
+          item.remove();
+          updateEmptyState();
+        }, 300);
+      });
+
+      item.querySelector('.task-checkbox').addEventListener('change', function() {
+        const nameEl = item.querySelector('.font-medium');
+        if (this.checked) {
+          nameEl.classList.add('line-through');
+          item.querySelector('.status-badge').className = 'status-badge completed';
+          item.querySelector('.status-badge').textContent = '已完成';
+        } else {
+          nameEl.classList.remove('line-through');
+          item.querySelector('.status-badge').className = 'status-badge pending';
+          item.querySelector('.status-badge').textContent = '待编排';
+        }
+      });
+
+      updateCounts();
+    });
+
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const item = this.closest('.dynamic-list-item');
+        item.classList.add('removing');
+        setTimeout(() => {
+          item.remove();
+          updateEmptyState();
+        }, 300);
+        showToast('任务已删除', 'info');
+        updateCounts();
+      });
+    });
+
+    document.querySelectorAll('.task-checkbox').forEach(cb => {
+      cb.addEventListener('change', function() {
+        const item = this.closest('.dynamic-list-item');
+        const nameEl = item.querySelector('.font-medium');
+        if (this.checked) {
+          nameEl.classList.add('line-through');
+          item.querySelector('.status-badge').className = 'status-badge completed';
+          item.querySelector('.status-badge').textContent = '已完成';
+        } else {
+          nameEl.classList.remove('line-through');
+          item.querySelector('.status-badge').className = 'status-badge pending';
+          item.querySelector('.status-badge').textContent = '待编排';
+        }
+        updateCounts();
+      });
+    });
+
+    function updateEmptyState() {
+      const list = document.getElementById('task-list');
+      const emptyState = document.getElementById('empty-state');
+      if (list.children.length === 0) {
+        emptyState.classList.remove('hidden');
+      }
+    }
+
+    function updateCounts() {
+      const items = document.querySelectorAll('.dynamic-list-item');
+      const total = items.length;
+      const completed = document.querySelectorAll('.dynamic-list-item .status-badge.completed').length;
+      const inprogress = document.querySelectorAll('.dynamic-list-item .status-badge.inprogress').length;
+      const pending = document.querySelectorAll('.dynamic-list-item .status-badge.pending').length;
+
+      document.getElementById('task-total').textContent = total;
+      document.getElementById('task-completed').textContent = completed;
+      document.getElementById('task-inprogress').textContent = inprogress;
+      document.getElementById('task-pending').textContent = pending;
+    }
+
+    // ==================== 计数器 ====================
+    let counterValue = 0;
+    let zoomValue = 50;
+
+    document.getElementById('counter-inc').addEventListener('click', function() {
+      if (counterValue < 10) {
+        counterValue++;
+        document.getElementById('counter-value').textContent = counterValue;
+      }
+    });
+
+    document.getElementById('counter-dec').addEventListener('click', function() {
+      if (counterValue > 0) {
+        counterValue--;
+        document.getElementById('counter-value').textContent = counterValue;
+      }
+    });
+
+    document.getElementById('zoom-inc').addEventListener('click', function() {
+      if (zoomValue < 200) {
+        zoomValue += 25;
+        document.getElementById('zoom-value').textContent = zoomValue + '%';
+      }
+    });
+
+    document.getElementById('zoom-dec').addEventListener('click', function() {
+      if (zoomValue > 25) {
+        zoomValue -= 25;
+        document.getElementById('zoom-value').textContent = zoomValue + '%';
+      }
+    });
+
+    // ==================== 开关切换 ==================== */
+    document.querySelectorAll('.toggle').forEach(toggle => {
+      toggle.addEventListener('click', function() {
+        const isActive = this.classList.toggle('active');
+        this.dataset.state = isActive;
+
+        const names = {
+          'toggle-warning': '时间超出高亮',
+          'toggle-auto': '自动刷新',
+          'toggle-flight': '航班信息',
+          'toggle-drag': '拖拽编排'
+        };
+
+        showToast(
+          `${names[this.id]}已${isActive ? '开启' : '关闭'}`,
+          isActive ? 'success' : 'info'
+        );
+      });
+    });
+
+    console.log('状态管理模式已加载');
+  </script>
+</body>
+</html>

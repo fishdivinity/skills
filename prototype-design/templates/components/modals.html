@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模态框系统 - 原型组件</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            csa: {
+              50: '#e6f0ff',
+              100: '#cce0ff',
+              200: '#99c2ff',
+              300: '#66a3ff',
+              400: '#3385ff',
+              500: '#0066cc',
+              600: '#0052a3',
+              700: '#003d7a',
+              800: '#002952',
+              900: '#001429',
+            },
+            csaRed: {
+              400: '#e8384d',
+              500: '#c8102e',
+              600: '#a00d25',
+            },
+            csaGold: {
+              400: '#e0b85c',
+              500: '#d4a843',
+              600: '#b8922e',
+            },
+            neutral: {
+              50: '#fafafa',
+              100: '#f5f5f5',
+              200: '#e5e5e5',
+              300: '#d4d4d4',
+              400: '#a3a3a3',
+              500: '#737373',
+              600: '#525252',
+              700: '#404040',
+              800: '#262626',
+              900: '#171717',
+            },
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+            info: '#3b82f6',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    /* ==================== 模态框基础 ==================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.95) translateY(10px);
+      transition: transform 0.2s ease;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1) translateY(0);
+    }
+
+    /* ==================== 模态框尺寸 ==================== */
+    .modal-sm { width: 100%; max-width: 400px; }
+    .modal-md { width: 100%; max-width: 500px; }
+    .modal-lg { width: 100%; max-width: 640px; }
+    .modal-xl { width: 100%; max-width: 800px; }
+    .modal-2xl { width: 100%; max-width: 1000px; }
+
+    /* ==================== 模态框类型 ==================== */
+    .modal-confirm .modal-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+
+    .modal-confirm.success .modal-icon { background: #dcfce7; }
+    .modal-confirm.success .modal-icon i { color: #10b981; font-size: 28px; }
+
+    .modal-confirm.error .modal-icon { background: #fee2e2; }
+    .modal-confirm.error .modal-icon i { color: #ef4444; font-size: 28px; }
+
+    .modal-confirm.warning .modal-icon { background: #fef3c7; }
+    .modal-confirm.warning .modal-icon i { color: #f59e0b; font-size: 28px; }
+
+    .modal-confirm.info .modal-icon { background: #dbeafe; }
+    .modal-confirm.info .modal-icon i { color: #3b82f6; font-size: 28px; }
+
+    /* ==================== 表单模态框 ==================== */
+    .modal-form .form-group {
+      margin-bottom: 16px;
+    }
+
+    .modal-form .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .modal-form .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .modal-form .form-input:focus {
+      border-color: #0066cc;
+      box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+    }
+
+    .modal-form .form-textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    /* ==================== 详情模态框 ==================== */
+    .modal-detail .detail-section {
+      padding: 16px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .modal-detail .detail-section:last-child {
+      border-bottom: none;
+    }
+
+    .modal-detail .detail-label {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    .modal-detail .detail-value {
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .modal-detail .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    /* ==================== 侧边抽屉 ==================== */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 50;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .drawer-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 480px;
+      max-width: 100%;
+      background: white;
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+      z-index: 51;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    }
+
+    .drawer.active {
+      transform: translateX(0);
+    }
+
+    .drawer-left {
+      left: 0;
+      right: auto;
+      box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+      transform: translateX(-100%);
+    }
+
+    .drawer-left.active {
+      transform: translateX(0);
+    }
+
+    /* ==================== 动画 ==================== */
+    @keyframes modal-fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes modal-slideUp {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes drawer-slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .animate-fadeIn { animation: modal-fadeIn 0.2s ease; }
+    .animate-slideUp { animation: modal-slideUp 0.3s ease; }
+    .animate-drawer { animation: drawer-slideIn 0.3s ease; }
+  </style>
+</head>
+<body class="bg-neutral-100 min-h-screen p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-neutral-900 mb-2">模态框系统</h1>
+    <p class="text-neutral-600 mb-8">支持多种类型：确认框、表单弹窗、详情弹窗、侧边抽屉</p>
+
+    <!-- ==================== 按钮触发区 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">触发按钮</h2>
+      <div class="flex flex-wrap gap-3">
+        <button class="px-4 py-2 bg-csa-500 text-white rounded-lg text-sm font-medium hover:bg-csa-600 transition-colors modal-trigger" data-modal="modal-success">
+          <i class="fas fa-check-circle mr-2"></i>成功提示
+        </button>
+        <button class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors modal-trigger" data-modal="modal-error">
+          <i class="fas fa-exclamation-circle mr-2"></i>错误提示
+        </button>
+        <button class="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors modal-trigger" data-modal="modal-warning">
+          <i class="fas fa-exclamation-triangle mr-2"></i>警告提示
+        </button>
+        <button class="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors modal-trigger" data-modal="modal-info">
+          <i class="fas fa-info-circle mr-2"></i>信息提示
+        </button>
+        <button class="px-4 py-2 bg-csa-500 text-white rounded-lg text-sm font-medium hover:bg-csa-600 transition-colors modal-trigger" data-modal="modal-form">
+          <i class="fas fa-edit mr-2"></i>表单弹窗
+        </button>
+        <button class="px-4 py-2 bg-csa-500 text-white rounded-lg text-sm font-medium hover:bg-csa-600 transition-colors modal-trigger" data-modal="modal-detail">
+          <i class="fas fa-file-alt mr-2"></i>详情弹窗
+        </button>
+        <button class="px-4 py-2 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors modal-trigger" data-modal="modal-large">
+          <i class="fas fa-expand mr-2"></i>大尺寸弹窗
+        </button>
+        <button class="px-4 py-2 bg-neutral-700 text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors drawer-trigger" data-drawer="drawer-right">
+          <i class="fas fa-arrow-left mr-2"></i>右侧抽屉
+        </button>
+        <button class="px-4 py-2 bg-neutral-700 text-white rounded-lg text-sm font-medium hover:bg-neutral-800 transition-colors drawer-trigger" data-drawer="drawer-left">
+          <i class="fas fa-arrow-right mr-2"></i>左侧抽屉
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== 模态框1：成功提示 ==================== -->
+    <div class="modal-overlay" id="modal-success">
+      <div class="modal-content modal-sm modal-confirm success animate-slideUp">
+        <div class="p-8 text-center">
+          <div class="modal-icon">
+            <i class="fas fa-check"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-neutral-900 mb-2">保存成功</h3>
+          <p class="text-sm text-neutral-600">您的更改已成功保存</p>
+        </div>
+        <div class="p-4 border-t border-neutral-200 flex justify-center">
+          <button class="px-6 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors close-modal">确定</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 模态框2：错误提示 ==================== -->
+    <div class="modal-overlay" id="modal-error">
+      <div class="modal-content modal-sm modal-confirm error animate-slideUp">
+        <div class="p-8 text-center">
+          <div class="modal-icon">
+            <i class="fas fa-times"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-neutral-900 mb-2">操作失败</h3>
+          <p class="text-sm text-neutral-600">任务无法放入该停场条，时间冲突</p>
+        </div>
+        <div class="p-4 border-t border-neutral-200 flex justify-center">
+          <button class="px-6 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors close-modal">确定</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 模态框3：警告提示 ==================== -->
+    <div class="modal-overlay" id="modal-warning">
+      <div class="modal-content modal-sm modal-confirm warning animate-slideUp">
+        <div class="p-8 text-center">
+          <div class="modal-icon">
+            <i class="fas fa-exclamation"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-neutral-900 mb-2">撤回确认</h3>
+          <p class="text-sm text-neutral-600">确认撤回已派发的任务吗？此操作不可撤销。</p>
+        </div>
+        <div class="p-4 border-t border-neutral-200 flex justify-end gap-3">
+          <button class="px-4 py-2 border border-neutral-300 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50 close-modal">取消</button>
+          <button class="px-6 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors">确认撤回</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 模态框4：信息提示 ==================== -->
+    <div class="modal-overlay" id="modal-info">
+      <div class="modal-content modal-sm modal-confirm info animate-slideUp">
+        <div class="p-8 text-center">
+          <div class="modal-icon">
+            <i class="fas fa-info"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-neutral-900 mb-2">派发确认</h3>
+          <p class="text-sm text-neutral-600">确认派发以下任务到指定车间？</p>
+        </div>
+        <div class="px-6 pb-4">
+          <div class="bg-neutral-50 rounded-lg p-3 text-sm text-neutral-700">
+            <div class="flex justify-between mb-1">
+              <span>TASK-001</span>
+              <span class="text-neutral-500">发动机定期检修</span>
+            </div>
+            <div class="flex justify-between">
+              <span>TASK-002</span>
+              <span class="text-neutral-500">起落架故障排除</span>
+            </div>
+          </div>
+        </div>
+        <div class="p-4 border-t border-neutral-200 flex justify-end gap-3">
+          <button class="px-4 py-2 border border-neutral-300 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50 close-modal">取消</button>
+          <button class="px-6 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">确认派发</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 模态框5：表单弹窗 ==================== -->
+    <div class="modal-overlay" id="modal-form">
+      <div class="modal-content modal-lg modal-form animate-slideUp">
+        <div class="p-6 border-b border-neutral-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-neutral-900">创建虚拟包</h3>
+          <button class="text-neutral-400 hover:text-neutral-600 close-modal">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1">
+          <div class="form-group">
+            <label class="form-label">虚拟包名称 <span class="text-red-500">*</span></label>
+            <input type="text" class="form-input" placeholder="请输入虚拟包名称">
+          </div>
+          <div class="form-group">
+            <label class="form-label">关联车间</label>
+            <select class="form-input">
+              <option value="">请选择车间</option>
+              <option value="一车间">一车间</option>
+              <option value="二车间">二车间</option>
+              <option value="三车间">三车间</option>
+              <option value="四车间">四车间</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">包含任务</label>
+            <div class="bg-neutral-50 rounded-lg p-3 border border-neutral-200">
+              <div class="flex items-center justify-between py-2 border-b border-neutral-100 last:border-0">
+                <div>
+                  <span class="text-sm font-medium text-neutral-900">TASK-001</span>
+                  <span class="text-xs text-neutral-500 ml-2">发动机定期检修</span>
+                </div>
+                <button class="text-neutral-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+              </div>
+              <div class="flex items-center justify-between py-2 border-b border-neutral-100 last:border-0">
+                <div>
+                  <span class="text-sm font-medium text-neutral-900">TASK-002</span>
+                  <span class="text-xs text-neutral-500 ml-2">起落架故障排除</span>
+                </div>
+                <button class="text-neutral-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">优先级</label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="priority" value="high" class="text-csa-500">
+                <span class="text-sm text-neutral-700">高</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="priority" value="medium" class="text-csa-500">
+                <span class="text-sm text-neutral-700">中</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="priority" value="low" class="text-csa-500">
+                <span class="text-sm text-neutral-700">低</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">备注</label>
+            <textarea class="form-input form-textarea" placeholder="可选填写备注信息"></textarea>
+          </div>
+        </div>
+        <div class="p-4 border-t border-neutral-200 flex justify-end gap-3">
+          <button class="px-4 py-2 border border-neutral-300 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50 close-modal">取消</button>
+          <button class="px-6 py-2 bg-csa-500 text-white rounded-lg text-sm font-medium hover:bg-csa-600 transition-colors">创建</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 模态框6：详情弹窗 ==================== -->
+    <div class="modal-overlay" id="modal-detail">
+      <div class="modal-content modal-xl modal-detail animate-slideUp">
+        <div class="p-6 border-b border-neutral-200 flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold text-neutral-900">任务详情</h3>
+            <p class="text-sm text-neutral-500 mt-1">TASK-2024-001</p>
+          </div>
+          <button class="text-neutral-400 hover:text-neutral-600 close-modal">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1">
+          <div class="detail-section">
+            <div class="detail-grid">
+              <div>
+                <div class="detail-label">任务名称</div>
+                <div class="detail-value font-medium">发动机定期检修</div>
+              </div>
+              <div>
+                <div class="detail-label">任务类型</div>
+                <div class="detail-value">定期检修</div>
+              </div>
+              <div>
+                <div class="detail-label">机型</div>
+                <div class="detail-value">B737-800</div>
+              </div>
+              <div>
+                <div class="detail-label">机号</div>
+                <div class="detail-value">B-8367</div>
+              </div>
+              <div>
+                <div class="detail-label">计划开始</div>
+                <div class="detail-value">2024-03-20 08:00</div>
+              </div>
+              <div>
+                <div class="detail-label">计划结束</div>
+                <div class="detail-value">2024-03-25 18:00</div>
+              </div>
+            </div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label mb-2">所需航材</div>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-3 py-1 bg-neutral-100 text-neutral-700 text-sm rounded-full">发动机滤芯 ×2</span>
+              <span class="px-3 py-1 bg-neutral-100 text-neutral-700 text-sm rounded-full">液压油 50L</span>
+              <span class="px-3 py-1 bg-neutral-100 text-neutral-700 text-sm rounded-full">密封圈套装 ×1</span>
+            </div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label mb-2">所需资质</div>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-3 py-1 bg-csa-50 text-csa-700 text-sm rounded-full">发动机维修执照</span>
+              <span class="px-3 py-1 bg-csa-50 text-csa-700 text-sm rounded-full">无损检测证书</span>
+            </div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label mb-2">任务描述</div>
+            <div class="text-sm text-neutral-700 leading-relaxed">
+              对飞机发动机进行全面定期检修，包括滤芯更换、液压系统检查、密封件更换等，确保发动机运行状态良好。
+            </div>
+          </div>
+        </div>
+        <div class="p-4 border-t border-neutral-200 flex justify-end gap-3">
+          <button class="px-4 py-2 border border-neutral-300 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50 close-modal">关闭</button>
+          <button class="px-4 py-2 bg-csa-500 text-white rounded-lg text-sm font-medium hover:bg-csa-600 transition-colors">编辑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 模态框7：大尺寸弹窗 ==================== -->
+    <div class="modal-overlay" id="modal-large">
+      <div class="modal-content modal-2xl animate-slideUp">
+        <div class="p-6 border-b border-neutral-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-neutral-900">批量任务编排</h3>
+          <button class="text-neutral-400 hover:text-neutral-600 close-modal">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1">
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <h4 class="text-sm font-medium text-neutral-700 mb-3">待编排任务 (6)</h4>
+              <div class="space-y-2 max-h-64 overflow-y-auto">
+                <div class="bg-neutral-50 rounded-lg p-3 flex items-center justify-between">
+                  <div>
+                    <div class="text-sm font-medium text-neutral-900">TASK-001 发动机检修</div>
+                    <div class="text-xs text-neutral-500">B-8367 · 5小时</div>
+                  </div>
+                  <i class="fas fa-arrows-alt-h text-neutral-300"></i>
+                </div>
+                <div class="bg-neutral-50 rounded-lg p-3 flex items-center justify-between">
+                  <div>
+                    <div class="text-sm font-medium text-neutral-900">TASK-002 起落架检查</div>
+                    <div class="text-xs text-neutral-500">B-8368 · 2小时</div>
+                  </div>
+                  <i class="fas fa-arrows-alt-h text-neutral-300"></i>
+                </div>
+                <div class="bg-neutral-50 rounded-lg p-3 flex items-center justify-between">
+                  <div>
+                    <div class="text-sm font-medium text-neutral-900">TASK-003 航电检测</div>
+                    <div class="text-xs text-neutral-500">B-3092 · 1小时</div>
+                  </div>
+                  <i class="fas fa-arrows-alt-h text-neutral-300"></i>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 class="text-sm font-medium text-neutral-700 mb-3">停场条安排</h4>
+              <div class="space-y-2">
+                <div class="bg-csa-500 rounded-lg p-3 text-white">
+                  <div class="text-sm font-medium">AP-001 停场维修</div>
+                  <div class="text-xs text-white/70 mt-1">B-8367 · 张三负责</div>
+                </div>
+                <div class="bg-neutral-200 rounded-lg p-3 border-2 border-dashed border-neutral-300 text-center">
+                  <span class="text-sm text-neutral-500">拖拽任务到此处</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="p-4 border-t border-neutral-200 flex justify-end gap-3">
+          <button class="px-4 py-2 border border-neutral-300 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50 close-modal">取消</button>
+          <button class="px-6 py-2 bg-csa-500 text-white rounded-lg text-sm font-medium hover:bg-csa-600 transition-colors">确认编排</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 右侧抽屉 ==================== -->
+    <div class="drawer-overlay" id="drawer-overlay-right"></div>
+    <div class="drawer" id="drawer-right">
+      <div class="h-full flex flex-col">
+        <div class="p-6 border-b border-neutral-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-neutral-900">任务详情</h3>
+          <button class="text-neutral-400 hover:text-neutral-600 close-drawer" data-drawer="drawer-right">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6">
+          <div class="detail-section">
+            <div class="detail-label">任务名称</div>
+            <div class="detail-value font-medium">发动机定期检修</div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label">任务ID</div>
+            <div class="detail-value font-mono">TASK-2024-001</div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label">执管单位</div>
+            <div class="detail-value">维修部</div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label">责任人</div>
+            <div class="detail-value">张三</div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label">状态</div>
+            <div class="detail-value">
+              <span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">进行中</span>
+            </div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-label">操作记录</div>
+            <div class="space-y-3 mt-2">
+              <div class="flex gap-3">
+                <div class="w-2 h-2 rounded-full bg-green-500 mt-2"></div>
+                <div>
+                  <div class="text-sm text-neutral-900">任务已派发</div>
+                  <div class="text-xs text-neutral-500">2024-03-20 10:30</div>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <div class="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                <div>
+                  <div class="text-sm text-neutral-900">开始执行</div>
+                  <div class="text-xs text-neutral-500">2024-03-20 14:00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="p-4 border-t border-neutral-200 flex gap-3">
+          <button class="flex-1 px-4 py-2 border border-neutral-300 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50 close-drawer" data-drawer="drawer-right">关闭</button>
+          <button class="flex-1 px-4 py-2 bg-csa-500 text-white rounded-lg text-sm font-medium hover:bg-csa-600 transition-colors">编辑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 左侧抽屉 ==================== -->
+    <div class="drawer-overlay" id="drawer-overlay-left"></div>
+    <div class="drawer drawer-left" id="drawer-left">
+      <div class="h-full flex flex-col">
+        <div class="p-6 border-b border-neutral-200 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-neutral-900">筛选面板</h3>
+          <button class="text-neutral-400 hover:text-neutral-600 close-drawer" data-drawer="drawer-left">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6">
+          <div class="form-group">
+            <label class="form-label">任务状态</label>
+            <select class="form-input">
+              <option>全部</option>
+              <option>待准备</option>
+              <option>待编排</option>
+              <option>进行中</option>
+              <option>已完成</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">机型</label>
+            <select class="form-input">
+              <option>全部</option>
+              <option>B737</option>
+              <option>A320</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">执管单位</label>
+            <select class="form-input">
+              <option>全部</option>
+              <option>维修部</option>
+              <option>技术部</option>
+              <option>航电部</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">日期范围</label>
+            <input type="date" class="form-input mb-2">
+            <input type="date" class="form-input">
+          </div>
+        </div>
+        <div class="p-4 border-t border-neutral-200 flex gap-3">
+          <button class="flex-1 px-4 py-2 border border-neutral-300 rounded-lg text-sm text-neutral-700 hover:bg-neutral-50 close-drawer" data-drawer="drawer-left">重置</button>
+          <button class="flex-1 px-4 py-2 bg-csa-500 text-white rounded-lg text-sm font-medium hover:bg-csa-600 transition-colors">应用筛选</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== 模态框控制 ====================
+    function openModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+
+    function closeModal(modalId) {
+      const modal = modalId ? document.getElementById(modalId) : event.target.closest('.modal-overlay');
+      if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    }
+
+    document.querySelectorAll('.modal-trigger').forEach(btn => {
+      btn.addEventListener('click', function() {
+        openModal(this.dataset.modal);
+      });
+    });
+
+    document.querySelectorAll('.close-modal').forEach(btn => {
+      btn.addEventListener('click', closeModal);
+    });
+
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this.id);
+      });
+    });
+
+    // ==================== 抽屉控制 ====================
+    function openDrawer(drawerId) {
+      const drawer = document.getElementById(drawerId);
+      const overlay = document.getElementById('drawer-overlay-' + drawerId.replace('drawer-', ''));
+      if (drawer) {
+        drawer.classList.add('active');
+        if (overlay) overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+
+    function closeDrawer(drawerId) {
+      const drawer = drawerId ? document.getElementById(drawerId) : event.target.closest('.drawer');
+      if (drawer) {
+        drawer.classList.remove('active');
+        const overlay = document.getElementById('drawer-overlay-' + drawer.id.replace('drawer-', ''));
+        if (overlay) overlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    }
+
+    document.querySelectorAll('.drawer-trigger').forEach(btn => {
+      btn.addEventListener('click', function() {
+        openDrawer(this.dataset.drawer);
+      });
+    });
+
+    document.querySelectorAll('.close-drawer').forEach(btn => {
+      btn.addEventListener('click', function() {
+        closeDrawer(this.dataset.drawer);
+      });
+    });
+
+    document.querySelectorAll('.drawer-overlay').forEach(overlay => {
+      overlay.addEventListener('click', function(e) {
+        if (e.target === this) {
+          const drawerId = this.id.replace('drawer-overlay-', 'drawer-');
+          closeDrawer(drawerId);
+        }
+      });
+    });
+
+    console.log('模态框系统已加载');
+  </script>
+</body>
+</html>

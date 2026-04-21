@@ -1,0 +1,9 @@
+[Data]
+test_data_dir = data/test
+image_size = 224,224
+
+[Model]
+model_path = models/model.h5
+
+[Evaluation]
+batch_size = 32

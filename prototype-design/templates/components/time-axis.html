@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>时间轴UI组件 - 原型组件</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    /* ==================== 时间头部 ==================== */
+    .time-header {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      background: white;
+    }
+
+    .time-date-row {
+      display: flex;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f8fafc;
+    }
+
+    .time-date-cell {
+      text-align: center;
+      padding: 6px 4px;
+      font-size: 12px;
+      border-right: 1px solid #e5e7eb;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-shrink: 0;
+    }
+
+    .time-hour-row {
+      display: flex;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .time-hour-cell {
+      text-align: center;
+      padding: 4px 2px;
+      font-size: 11px;
+      color: #525252;
+      border-right: 1px solid #e5e7eb;
+      flex-shrink: 0;
+    }
+
+    .time-column-even,
+    .time-grid-even {
+      background-color: #ffffff;
+    }
+
+    .time-column-odd,
+    .time-grid-odd {
+      background-color: #f8fafc;
+    }
+
+    /* ==================== 缩放按钮 ==================== */
+    .zoom-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+      border: 1px solid #e5e7eb;
+      background: white;
+      color: #374151;
+      cursor: pointer;
+    }
+
+    .zoom-btn:hover {
+      background: #f3f4f6;
+    }
+
+    .zoom-btn.active {
+      background: #003087;
+      color: white;
+      border-color: #003087;
+    }
+
+    /* ==================== 筛选 ==================== */
+    .filter-select {
+      padding: 6px 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 12px;
+      background: white;
+      color: #374151;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .filter-select:focus {
+      border-color: #003087;
+    }
+
+    /* ==================== 日期导航 ==================== */
+    .date-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #525252;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .date-nav-btn:hover {
+      background: #f5f5f5;
+      border-color: #d4d4d4;
+    }
+
+    .date-nav-today {
+      padding: 6px 16px;
+      background: #003087;
+      border-color: #003087;
+      color: white;
+    }
+
+    .date-nav-today:hover {
+      background: #0055b3;
+      border-color: #0055b3;
+    }
+
+    /* ==================== 图例 ==================== */
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #737373;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .legend-dot.parking { background: linear-gradient(135deg, #003087, #0055b3); }
+    .legend-dot.flight { background: #d1d5db; border: 1px solid #9ca3af; }
+    .legend-dot.task-a { background: linear-gradient(135deg, #10b981, #059669); }
+    .legend-dot.task-b { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+
+    /* ==================== 当前时间标记 ==================== */
+    .current-time-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #c8102e;
+      z-index: 30;
+      pointer-events: none;
+    }
+
+    .current-time-marker::before {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      width: 12px;
+      height: 12px;
+      background: #c8102e;
+      border-radius: 50%;
+      animation: pulse-marker 2s infinite;
+    }
+
+    .current-time-marker::after {
+      content: '当前';
+      position: absolute;
+      top: 4px;
+      left: 8px;
+      padding: 1px 4px;
+      background: white;
+      color: #c8102e;
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 2px;
+      white-space: nowrap;
+    }
+
+    @keyframes pulse-marker {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(200, 16, 46, 0.4);
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(200, 16, 46, 0);
+      }
+    }
+
+    /* ==================== 甘特图行 ==================== */
+    .gantt-row {
+      border-bottom: 1px solid #e5e7eb;
+      height: 80px;
+      display: flex;
+    }
+
+    .gantt-row:nth-child(even) .fixed-left-column {
+      background: #fafafa;
+    }
+
+    .gantt-row:nth-child(odd) .fixed-left-column {
+      background: #ffffff;
+    }
+
+    /* ==================== 固定左侧列 ==================== */
+    .fixed-left-column {
+      position: sticky;
+      left: 0;
+      z-index: 40;
+      background: white;
+      min-width: 380px;
+      width: 380px;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+
+    .fixed-left-column .table-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid #e5e7eb;
+      height: 100%;
+    }
+
+    .fixed-left-column .table-cell:last-child {
+      border-right: none;
+    }
+
+    /* ==================== 甘特图区域 ==================== */
+    .gantt-area {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    /* ==================== 停场条/航班条基础 ==================== */
+    .parking-bar {
+      background: linear-gradient(135deg, #003087 0%, #0055b3 100%);
+      border-radius: 4px;
+      position: absolute;
+      height: 28px;
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .flight-bar {
+      background-color: #d1d5db;
+      border-radius: 3px;
+      position: absolute;
+      height: 18px;
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+      font-size: 10px;
+      color: #374151;
+      border: 1px solid #9ca3af;
+      z-index: 10;
+    }
+
+    /* ==================== 甘特图滚动容器 ==================== */
+    .gantt-scroll {
+      overflow-x: auto;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .gantt-scroll::-webkit-scrollbar {
+      height: 10px;
+      width: 10px;
+    }
+
+    .gantt-scroll::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 5px;
+    }
+
+    .gantt-scroll::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body class="bg-neutral-100 min-h-screen p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-neutral-900 mb-2">时间轴UI组件</h1>
+    <p class="text-neutral-600 mb-8">与 gantt-advanced.html 结构一致的组件示例</p>
+
+    <!-- ==================== 示例1：时间粒度切换 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例1：时间粒度切换</h2>
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex gap-1">
+          <button class="zoom-btn" data-zoom="minute">分钟</button>
+          <button class="zoom-btn active" data-zoom="hour">小时</button>
+          <button class="zoom-btn" data-zoom="day">天</button>
+        </div>
+        <div class="legend">
+          <div class="legend-item">
+            <span class="legend-dot parking"></span>
+            <span>停场条</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot flight"></span>
+            <span>航班</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot task-a"></span>
+            <span>任务A</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot task-b"></span>
+            <span>任务B</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="border border-neutral-200 rounded-lg overflow-hidden">
+        <div class="time-header">
+          <div class="flex">
+            <div class="fixed-left-column" style="z-index: 50; background: white;">
+              <div class="flex h-14">
+                <div class="table-cell w-10">
+                  <input type="checkbox" class="w-4 h-4">
+                </div>
+                <div class="table-cell w-24 font-medium text-sm text-neutral-700">机号</div>
+                <div class="table-cell flex-1 font-medium text-sm text-neutral-700">执管单位</div>
+                <div class="table-cell w-16 font-medium text-sm text-neutral-700">机型</div>
+                <div class="table-cell w-20 font-medium text-sm text-neutral-700">发动机</div>
+              </div>
+            </div>
+            <div class="flex" id="time-scale"></div>
+          </div>
+          <div class="flex">
+            <div class="fixed-left-column" style="z-index: 45; background: #f8fafc;">
+              <div class="flex h-7">
+                <div class="table-cell w-10"></div>
+                <div class="table-cell w-24"></div>
+                <div class="table-cell flex-1"></div>
+                <div class="table-cell w-16"></div>
+                <div class="table-cell w-20"></div>
+              </div>
+            </div>
+            <div class="flex" id="time-scale-hour"></div>
+          </div>
+        </div>
+
+        <div class="relative" id="gantt-body">
+          <div class="current-time-marker" id="time-marker" style="left: 440px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 示例2：日期导航 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例2：日期导航</h2>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <button class="date-nav-btn">
+            <i class="fas fa-chevron-left text-xs"></i>
+            前一天
+          </button>
+          <div class="px-4 py-2 font-medium text-neutral-900" id="current-date">2024-03-20</div>
+          <button class="date-nav-btn">
+            后一天
+            <i class="fas fa-chevron-right text-xs"></i>
+          </button>
+          <button class="date-nav-btn date-nav-today">今天</button>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex gap-1">
+            <button class="zoom-btn" data-zoom="minute">分钟</button>
+            <button class="zoom-btn active" data-zoom="hour">小时</button>
+            <button class="zoom-btn" data-zoom="day">天</button>
+          </div>
+          <div class="h-6 w-px bg-neutral-200"></div>
+          <div class="legend">
+            <div class="legend-item">
+              <span class="legend-dot parking"></span>
+              <span>停场条</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot flight"></span>
+              <span>航班</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 示例3：完整甘特图头部 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例3：完整甘特图头部</h2>
+      <div class="border border-neutral-200 rounded-lg overflow-hidden">
+        <div class="time-header">
+          <div class="flex">
+            <div class="fixed-left-column" style="z-index: 50; background: white;">
+              <div class="flex h-14">
+                <div class="table-cell w-10">
+                  <input type="checkbox" class="w-4 h-4">
+                </div>
+                <div class="table-cell w-24 font-medium text-sm text-neutral-700">机号</div>
+                <div class="table-cell flex-1 font-medium text-sm text-neutral-700">维修执管单位</div>
+                <div class="table-cell w-16 font-medium text-sm text-neutral-700 border-r">机型</div>
+                <div class="table-cell w-24 font-medium text-sm text-neutral-700">发动机</div>
+              </div>
+            </div>
+            <div class="flex" id="full-time-scale"></div>
+          </div>
+          <div class="flex">
+            <div class="fixed-left-column" style="z-index: 45; background: #f8fafc;">
+              <div class="flex h-7">
+                <div class="table-cell w-10"></div>
+                <div class="table-cell w-24"></div>
+                <div class="table-cell flex-1"></div>
+                <div class="table-cell w-16 border-r"></div>
+                <div class="table-cell w-24"></div>
+              </div>
+            </div>
+            <div class="flex" id="full-time-scale-hour"></div>
+          </div>
+        </div>
+
+        <div class="gantt-row" style="height: 80px;">
+          <div class="fixed-left-column">
+            <div class="flex h-full">
+              <div class="table-cell w-10">
+                <input type="checkbox" class="w-4 h-4">
+              </div>
+              <div class="table-cell w-24">
+                <span class="font-semibold text-sm">B-8367</span>
+              </div>
+              <div class="table-cell flex-1">
+                <span class="text-xs">维修部</span>
+              </div>
+              <div class="table-cell w-16 border-r">
+                <span class="text-sm">B737</span>
+              </div>
+              <div class="table-cell w-24">
+                <span class="text-sm">CFM56</span>
+              </div>
+            </div>
+          </div>
+          <div class="gantt-area relative" style="width: 1800px; height: 80px;" id="gantt-row-1">
+            <div class="parking-bar" style="left: 150px; width: 600px; top: 8px;">
+              <span class="text-white text-xs font-medium">AP-001 停场维修</span>
+            </div>
+            <div class="flight-bar" style="left: 1200px; width: 225px; top: 42px;">
+              <span class="font-medium">16:00</span>
+              <span class="font-medium mx-1">CZ3101</span>
+              <span class="font-medium">19:15</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="current-time-marker" style="left: 440px;"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const HOUR_WIDTH = 75;
+    const TOTAL_HOURS = 24;
+
+    function generateTimeScale(containerId, hourContainerId) {
+      const dateContainer = document.getElementById(containerId);
+      const hourContainer = document.getElementById(hourContainerId);
+
+      let dateHtml = '';
+      let hourHtml = '';
+      let currentDate = null;
+      let dateStartHour = 0;
+      let hoursInDay = 0;
+
+      for (let i = 0; i < TOTAL_HOURS; i++) {
+        const date = new Date();
+        date.setHours(i);
+        const dateKey = `${date.getMonth()}-${date.getDate()}`;
+
+        if (currentDate !== dateKey) {
+          if (currentDate !== null && hoursInDay > 0) {
+            const width = hoursInDay * HOUR_WIDTH;
+            dateHtml += `<div class="time-date-cell" style="width: ${width}px;">
+              <span class="font-medium" style="color: #003087;">${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}</span>
+            </div>`;
+          }
+          currentDate = dateKey;
+          dateStartHour = i;
+          hoursInDay = 0;
+        }
+        hoursInDay++;
+
+        const isEven = i % 2 === 0;
+        hourHtml += `<div class="time-hour-cell ${isEven ? 'time-column-even' : 'time-column-odd'}" style="width: ${HOUR_WIDTH}px;">
+          <span>${String(i).padStart(2, '0')}:00</span>
+        </div>`;
+      }
+
+      if (hoursInDay > 0) {
+        const width = hoursInDay * HOUR_WIDTH;
+        const date = new Date();
+        date.setHours(dateStartHour);
+        dateHtml += `<div class="time-date-cell" style="width: ${width}px;">
+          <span class="font-medium" style="color: #003087;">${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}</span>
+        </div>`;
+      }
+
+      dateContainer.innerHTML = dateHtml;
+      hourContainer.innerHTML = hourHtml;
+    }
+
+    function updateCurrentTimeMarker() {
+      const marker = document.getElementById('time-marker');
+      if (!marker) return;
+
+      const now = new Date();
+      const hoursSinceStart = now.getHours() + now.getMinutes() / 60;
+      const leftPosition = 380 + hoursSinceStart * HOUR_WIDTH;
+      marker.style.left = leftPosition + 'px';
+    }
+
+    document.querySelectorAll('.zoom-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const group = this.closest('.flex') || this.closest('section');
+        group.querySelectorAll('.zoom-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    generateTimeScale('time-scale', 'time-scale-hour');
+    generateTimeScale('full-time-scale', 'full-time-scale-hour');
+    updateCurrentTimeMarker();
+    setInterval(updateCurrentTimeMarker, 60000);
+
+    console.log('时间轴UI组件已加载');
+  </script>
+</body>
+</html>

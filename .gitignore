@@ -17,3 +17,6 @@ coverage.out
 
 # 排除环境变量文件
 .env
+
+# 排除仓库切换脚本
+repo_switcher.py

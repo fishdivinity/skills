@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>拖拽交互模块 - 原型组件</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    /* ==================== 任务卡片 ==================== */
+    .task-card {
+      cursor: grab;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .task-card:active {
+      cursor: grabbing;
+    }
+
+    .task-card.dragging {
+      opacity: 0.5;
+      transform: scale(0.98);
+    }
+
+    .task-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 48, 135, 0.15);
+      border-color: #003087;
+    }
+
+    .task-card.return-card {
+      background-color: #FFFBEB;
+      border-left: 4px solid #F59E0B;
+    }
+
+    /* ==================== 停场条 ==================== */
+    .parking-bar {
+      background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+      border-radius: 4px;
+      position: absolute;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 10;
+      height: 28px;
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+    }
+
+    .parking-bar:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+    }
+
+    .parking-bar.drag-over {
+      box-shadow: 0 0 0 3px #0066cc, 0 4px 16px rgba(0, 102, 204, 0.4);
+    }
+
+    .parking-bar.has-warning {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    }
+
+    .parking-bar.has-warning.non-executive {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    .parking-bar-label {
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .parking-bar-info {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    /* ==================== 放置区域 ==================== */
+    .drop-zone {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    /* ==================== 甘特图区域 ==================== */
+    .gantt-area {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .gantt-row {
+      border-bottom: 1px solid #e5e7eb;
+      height: 80px;
+      display: flex;
+    }
+
+    .fixed-left-column {
+      position: sticky;
+      left: 0;
+      z-index: 40;
+      background: white;
+      min-width: 380px;
+      width: 380px;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+
+    .fixed-left-column .table-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid #e5e7eb;
+      height: 100%;
+    }
+
+    /* ==================== 任务块 ==================== */
+    .task-block {
+      position: absolute;
+      height: 18px;
+      border-radius: 3px;
+      cursor: move;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      padding: 0 6px;
+      font-size: 10px;
+      font-weight: 500;
+      color: white;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      z-index: 15;
+    }
+
+    .task-block:hover {
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .task-block.dragging {
+      opacity: 0.7;
+      z-index: 1000;
+    }
+
+    .task-block.task-type-a { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .task-block.task-type-b { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    .task-block.task-type-c { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+
+    /* ==================== 筛选 ==================== */
+    .filter-tab {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      background-color: #f3f4f6;
+      color: #374151;
+      border: 1px solid transparent;
+    }
+
+    .filter-tab:hover {
+      background-color: #e5e7eb;
+    }
+
+    .filter-tab.active {
+      background-color: #0066cc;
+      color: white;
+    }
+
+    .filter-tab .count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+      border-radius: 9px;
+      font-size: 10px;
+      margin-left: 6px;
+      padding: 0 5px;
+    }
+
+    .filter-tab:not(.active) .count {
+      background-color: #d1d5db;
+      color: #1f2937;
+    }
+
+    /* ==================== Toast ==================== */
+    .toast {
+      position: fixed;
+      padding: 12px 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 9999;
+      animation: toastIn 0.3s ease;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toast.success { border-left: 4px solid #10b981; }
+    .toast.error { border-left: 4px solid #ef4444; }
+    .toast.warning { border-left: 4px solid #f59e0b; }
+  </style>
+</head>
+<body class="bg-neutral-100 min-h-screen p-8">
+
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-neutral-900 mb-2">拖拽交互模块</h1>
+    <p class="text-neutral-600 mb-8">基于 scheduling.html 真实结构，支持任务卡片→停场条拖拽</p>
+
+    <!-- ==================== 示例1：任务卡片拖拽到停场条 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例1：任务卡片 → 甘特图停场条</h2>
+      <div class="flex gap-6">
+        <!-- 任务池 -->
+        <div class="w-72 flex-shrink-0">
+          <h3 class="text-sm font-medium text-neutral-600 mb-3">待编排任务</h3>
+          <div class="space-y-2" id="task-pool">
+            <div class="task-card bg-white border border-neutral-200 rounded-lg p-3" draggable="true" data-task-id="TASK-001" data-task='{"id":"TASK-001","name":"发动机定期检修","aircraft":"B-8367","duration":"5小时","priority":"高"}'>
+              <div class="flex items-start justify-between mb-2">
+                <span class="text-xs font-medium text-csa-primary">TASK-001</span>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600">待编排</span>
+              </div>
+              <h4 class="font-medium text-neutral-900 text-sm">发动机定期检修</h4>
+              <div class="flex items-center gap-3 text-xs text-neutral-500 mt-2">
+                <span><i class="fas fa-plane mr-1"></i>B-8367</span>
+                <span><i class="fas fa-clock mr-1"></i>5h</span>
+              </div>
+            </div>
+
+            <div class="task-card bg-white border border-neutral-200 rounded-lg p-3" draggable="true" data-task-id="TASK-002" data-task='{"id":"TASK-002","name":"起落架故障排除","aircraft":"B-8368","duration":"2小时","priority":"高"}'>
+              <div class="flex items-start justify-between mb-2">
+                <span class="text-xs font-medium text-csa-primary">TASK-002</span>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">紧急</span>
+              </div>
+              <h4 class="font-medium text-neutral-900 text-sm">起落架故障排除</h4>
+              <div class="flex items-center gap-3 text-xs text-neutral-500 mt-2">
+                <span><i class="fas fa-plane mr-1"></i>B-8368</span>
+                <span><i class="fas fa-clock mr-1"></i>2h</span>
+              </div>
+            </div>
+
+            <div class="task-card bg-white border border-neutral-200 rounded-lg p-3" draggable="true" data-task-id="TASK-003" data-task='{"id":"TASK-003","name":"航电系统部件更换","aircraft":"B-3092","duration":"1小时","priority":"中"}'>
+              <div class="flex items-start justify-between mb-2">
+                <span class="text-xs font-medium text-csa-500">TASK-003</span>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">待准备</span>
+              </div>
+              <h4 class="font-medium text-neutral-900 text-sm">航电系统部件更换</h4>
+              <div class="flex items-center gap-3 text-xs text-neutral-500 mt-2">
+                <span><i class="fas fa-plane mr-1"></i>B-3092</span>
+                <span><i class="fas fa-clock mr-1"></i>1h</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 甘特图简化视图 -->
+        <div class="flex-1">
+          <h3 class="text-sm font-medium text-neutral-600 mb-3">甘特图 - 停场条</h3>
+          <div class="border border-neutral-200 rounded-lg overflow-hidden">
+            <div class="gantt-row" style="height: 80px;">
+              <div class="fixed-left-column" style="min-width: 200px; width: 200px;">
+                <div class="flex h-full">
+                  <div class="table-cell w-12">
+                    <input type="checkbox" class="w-4 h-4">
+                  </div>
+                  <div class="table-cell flex-1">
+                    <span class="font-semibold text-sm">B-8367</span>
+                  </div>
+                </div>
+              </div>
+              <div class="gantt-area relative" style="width: 900px; height: 80px;">
+                <div class="parking-bar" style="left: 150px; width: 600px; top: 8px;"
+                  data-parking-id="AP-001"
+                  ondragover="handleDragOver(event)"
+                  ondragleave="handleDragLeave(event)"
+                  ondrop="handleDrop(event)">
+                  <span class="parking-bar-label">AP-001 停场维修 18:00 张三</span>
+                  <i class="fas fa-exclamation text-white text-xs ml-2"></i>
+                  <div class="drop-zone"></div>
+                </div>
+                <div class="task-block task-type-a" style="left: 180px; width: 120px; top: 10px;">
+                  发动机检修
+                </div>
+              </div>
+            </div>
+
+            <div class="gantt-row" style="height: 80px;">
+              <div class="fixed-left-column" style="min-width: 200px; width: 200px;">
+                <div class="flex h-full">
+                  <div class="table-cell w-12">
+                    <input type="checkbox" class="w-4 h-4">
+                  </div>
+                  <div class="table-cell flex-1">
+                    <span class="font-semibold text-sm">B-8368</span>
+                  </div>
+                </div>
+              </div>
+              <div class="gantt-area relative" style="width: 900px; height: 80px;">
+                <div class="parking-bar" style="left: 450px; width: 450px; top: 8px;"
+                  data-parking-id="AP-002"
+                  ondragover="handleDragOver(event)"
+                  ondragleave="handleDragLeave(event)"
+                  ondrop="handleDrop(event)">
+                  <span class="parking-bar-label">AP-002 定检 20:00 李四</span>
+                  <div class="drop-zone"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="gantt-row bg-neutral-50" style="height: 80px;">
+              <div class="fixed-left-column" style="min-width: 200px; width: 200px; background: #fafafa;">
+                <div class="flex h-full">
+                  <div class="table-cell w-12">
+                    <input type="checkbox" class="w-4 h-4">
+                  </div>
+                  <div class="table-cell flex-1">
+                    <span class="font-semibold text-sm">B-3092</span>
+                  </div>
+                </div>
+              </div>
+              <div class="gantt-area relative" style="width: 900px; height: 80px;">
+                <div class="parking-bar has-warning" style="left: 0px; width: 500px; top: 8px;"
+                  data-parking-id="AP-003"
+                  ondragover="handleDragOver(event)"
+                  ondragleave="handleDragLeave(event)"
+                  ondrop="handleDrop(event)">
+                  <span class="parking-bar-label">AP-003 换发 10:00 王五</span>
+                  <i class="fas fa-exclamation text-white text-xs ml-2"></i>
+                  <div class="drop-zone"></div>
+                </div>
+                <div class="task-block task-type-b" style="left: 30px; width: 200px; top: 10px;">
+                  发动机更换
+                </div>
+                <div class="task-block task-type-c has-warning" style="left: 250px; width: 80px; top: 10px;">
+                  测试
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 示例2：停场条状态 ==================== -->
+    <section class="bg-white rounded-xl shadow-sm p-6 mb-6">
+      <h2 class="text-lg font-semibold text-neutral-900 mb-4">示例2：停场条状态说明</h2>
+      <div class="grid grid-cols-4 gap-4">
+        <div class="p-4 border border-neutral-200 rounded-lg text-center">
+          <div class="parking-bar mx-auto mb-3 relative" style="width: 200px; position: relative; left: auto; top: auto; transform: none;">
+            <span class="parking-bar-label">正常停场条</span>
+          </div>
+          <p class="text-sm text-neutral-600">正常状态</p>
+        </div>
+
+        <div class="p-4 border border-neutral-200 rounded-lg text-center">
+          <div class="parking-bar has-warning mx-auto mb-3 relative" style="width: 200px; position: relative; left: auto; top: auto; transform: none;">
+            <span class="parking-bar-label">时间不足</span>
+            <i class="fas fa-exclamation text-white text-xs ml-2"></i>
+          </div>
+          <p class="text-sm text-neutral-600">警告状态（红色脉冲）</p>
+        </div>
+
+        <div class="p-4 border border-neutral-200 rounded-lg text-center">
+          <div class="parking-bar has-warning non-executive mx-auto mb-3 relative" style="width: 200px; position: relative; left: auto; top: auto; transform: none;">
+            <span class="parking-bar-label">非执管任务</span>
+            <i class="fas fa-exclamation text-white text-xs ml-2"></i>
+          </div>
+          <p class="text-sm text-neutral-600">非执管状态（橙色）</p>
+        </div>
+
+        <div class="p-4 border border-neutral-200 rounded-lg text-center">
+          <div class="parking-bar locked mx-auto mb-3 relative" style="width: 200px; position: relative; left: auto; top: auto; transform: none; opacity: 0.7;">
+            <span class="parking-bar-label">已锁定</span>
+          </div>
+          <p class="text-sm text-neutral-600">锁定状态（灰色）</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Toast容器 -->
+  <div id="toast-container" class="fixed bottom-6 right-6 space-y-2"></div>
+
+  <script>
+    // ==================== Toast提示 ====================
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // ==================== 拖拽处理 ====================
+    let draggedTask = null;
+
+    document.querySelectorAll('.task-card').forEach(card => {
+      card.addEventListener('dragstart', function(e) {
+        draggedTask = {
+          id: this.dataset.taskId,
+          data: JSON.parse(this.dataset.task)
+        };
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', this.dataset.task);
+      });
+
+      card.addEventListener('dragend', function() {
+        this.classList.remove('dragging');
+        draggedTask = null;
+      });
+    });
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      this.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      this.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      this.classList.remove('drag-over');
+
+      const taskData = JSON.parse(e.dataTransfer.getData('text/plain'));
+      const parkingId = this.dataset.parkingId;
+
+      showToast(`任务 "${taskData.name}" 已放置到 ${parkingId}`, 'success');
+    }
+
+    console.log('拖拽交互模块已加载');
+  </script>
+</body>
+</html>
